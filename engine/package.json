@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@types/node": "^25.8.0",
     "crypto": "^1.0.1"
   }
 }

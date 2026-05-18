@@ -31,11 +31,8 @@ export interface Order {
     market: string,
     side: OrderSide,
     qty: number,
-    filledQty: number,
     margin: number,
     orderType: OrderType,
-    fillQty: number,
-    positionType: PositionType,
     price: number,
     status: OrderStatus,
     createdAt: number
