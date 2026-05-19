@@ -6,9 +6,7 @@ export interface TokenPayload {
   userId: string;
 }
 
-export function createToken(payload: TokenPayload): string {
-  return jwt.sign(payload, env.JWT_SECRET, { expiresIn: "7d" });
-}
+export { createToken } from "./createToken.js";
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
