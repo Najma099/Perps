@@ -1,6 +1,4 @@
-import { BALANCES, ORDERBOOKS, ORDERS, FILLS, MARK_PRICE, POSITIONS, type Fill, type OrderSide, type OrderType, type PositionType, type Position, type Order, type RestingOrder } from "../store/perp-store";
-
-// case "cancel_position":       return cancelPosition(message.payload);
+import { BALANCES, ORDERBOOKS, ORDERS, FILLS, MARK_PRICE, POSITIONS,type Orderbook, type Fill, type OrderSide, type OrderType, type PositionType, type Position, type Order, type RestingOrder } from "../store/perp-store";
 
 const seedUserIfNeeded = (userId: string) => {
     if(!BALANCES.has(userId)) {
@@ -97,63 +95,107 @@ export const openPosition = (payload: Record<string, unknown>) => {
 
     seedUserIfNeeded(userId);
     const userBalance = BALANCES.get(userId)!;
-    const availBalance = userBalance?.available!;
+    if (userBalance.available < margin) throw new Error('Insufficient funds');
 
-    if(availBalance < margin) {
-        throw new Error('Insufficient funds');
-    }
-
+    userBalance.available -= margin;
     userBalance.locked += margin;
-    userBalance.available -= margin
-
 
     const order: Order = {
         orderId: crypto.randomUUID(),
-        userId,
-        market,
-        side,
-        qty,
+        userId, 
+        market, 
+        side, 
+        qty, 
         margin,
-        orderType,
-        price,
+        orderType, 
+        price, 
         status: 'open',
         createdAt: Date.now()
     };
 
-    if(!ORDERS.has(userId)) ORDERS.set(userId, []);
+    if (!ORDERS.has(userId))  ORDERS.set(userId, []);
     ORDERS.get(userId)!.push(order);
-        
+
     if (!ORDERBOOKS.has(market)) {
         ORDERBOOKS.set(market, {
-            asks:            new Map(),
-            bids:            new Map(),
+            asks: new Map(), bids: new Map(),
             lastTradedPrice: MARK_PRICE.get(market) ?? 0,
-            indexPrice:      MARK_PRICE.get(market) ?? 0
+            indexPrice: MARK_PRICE.get(market) ?? 0
         });
     }
     const book = ORDERBOOKS.get(market)!;
-    const oppoSite = positionType === 'long' ? book.asks : book.bids;
 
-    let filledQty = 0;
+    const { filledQty, fills, takerPositions, makerPositions } =
+        matchOrder(book, positionType, orderType, price, qty, margin, userId, market);
 
-    while(filledQty < qty) {
+    if (!FILLS.has(market)) FILLS.set(market, []);
+    FILLS.get(market)!.push(...fills);
+
+    if (!POSITIONS.has(userId)) POSITIONS.set(userId, []);
+    POSITIONS.get(userId)!.push(...takerPositions);
+
+    for (const pos of makerPositions) {
+        if (!POSITIONS.has(pos.userId)) POSITIONS.set(pos.userId, []);
+        POSITIONS.get(pos.userId)!.push(pos);
+    }
+
+    if (filledQty < qty && orderType === 'limit') {
+        const restingOrder: RestingOrder = {
+            orderId:   order.orderId,
+            userId, side, market, price,
+            qty:       qty - filledQty,
+            margin:    ((qty - filledQty) / qty) * margin,
+            createdAt: Date.now()
+        };
+        const sideBook = side === 'buy' ? book.bids : book.asks;
+        if (!sideBook.has(price)) sideBook.set(price, []);
+        sideBook.get(price)!.push(restingOrder);
+    }
+
+    order.status = filledQty === 0   ? 'open'
+            : filledQty < qty   ? 'partially_filled'
+            : 'filled';
+
+    return order;
+};
+
+export const matchOrder = (
+    book:         Orderbook,
+    positionType: PositionType,
+    orderType:    OrderType,
+    price:        number,
+    qty:          number,
+    margin:       number,
+    userId:       string,
+    market:       string
+): { filledQty: number, fills: Fill[], takerPositions: Position[], makerPositions: Position[] } => {
+
+    const opposite = positionType === 'long' ? book.asks : book.bids;
+
+    let filledQty:      number     = 0;
+    const fills:        Fill[]     = [];
+    const takerPositions: Position[] = [];
+    const makerPositions: Position[] = [];
+
+    while (filledQty < qty) {
         const remaining = qty - filledQty;
+        const prices    = [...opposite.keys()];
+        if (prices.length === 0) break;
 
-        const prices = [...oppoSite.keys()];
-        if(prices.length == 0) break;
+        const bestPrice = positionType === 'long'
+            ? Math.min(...prices)
+            : Math.max(...prices);
 
-        const bestPrices = positionType === 'long' ? Math.min(...prices) : Math.max(...prices);
-
-        if(orderType == 'limit') {
-            if(positionType === 'long' && bestPrices > price) break;
-            if(positionType === 'short' && bestPrices < price) break;
+        if (orderType === 'limit') {
+            if (positionType === 'long'  && bestPrice > price) break;
+            if (positionType === 'short' && bestPrice < price) break;
         }
 
-
-        const level = oppoSite.get(bestPrices)!;
+        const level   = opposite.get(bestPrice)!;
         const resting = level[0]!;
 
-        const fillQty = Math.min(resting.qty, remaining);
+        const originalRestingQty = resting.qty;         
+        const fillQty   = Math.min(resting.qty, remaining);
         const fillPrice = resting.price;
 
         const fill: Fill = {
@@ -168,102 +210,71 @@ export const openPosition = (payload: Record<string, unknown>) => {
             short:     positionType === 'short' ? userId : resting.userId,
             createdAt: Date.now()
         };
+        fills.push(fill);
 
-        if(!FILLS.has(market)) {
-            FILLS.set(market, []);
-        }
-        FILLS.get(market)!.push(fill);
-
-        resting.qty -= fillQty;
-        if(resting.qty === 0) {
+        resting.qty    -= fillQty;
+        resting.margin -= (fillQty / originalRestingQty) * resting.margin;
+        if (resting.qty === 0) {
             level.shift();
-            if(level.length === 0) oppoSite.delete(bestPrices);
+            if (level.length === 0) opposite.delete(bestPrice);
         }
 
-        const takerFillMargin = (fillQty/ qty) * margin;
 
-        const takerLiqPrice = positionType === 'long'
+        const takerFillMargin = (fillQty / qty) * margin;
+        const takerLiqPrice   = positionType === 'long'
             ? fillPrice - (takerFillMargin / fillQty)
             : fillPrice + (takerFillMargin / fillQty);
-        
-        const takerPosition: Position = {
-            positionId: crypto.randomUUID(),
+
+        takerPositions.push({
+            positionId:       crypto.randomUUID(),
             userId,
             market,
-            type: positionType,
-            qty: fillQty,
-            margin: takerFillMargin,
-            unrealizedPnl: 0,
-            realizedPnl: 0,
-            averagePrice: fillPrice,
+            type:             positionType,
+            qty:              fillQty,
+            margin:           takerFillMargin,
+            unrealizedPnl:    0,
+            realizedPnl:      0,
+            averagePrice:     fillPrice,
             liquidationPrice: takerLiqPrice,
-            positionStatus: "open",
-            createdAt: Date.now()
-        }
+            positionStatus:   'open',
+            createdAt:        Date.now()
+        });
 
-        if(!POSITIONS.has(userId)) {
-            POSITIONS.set(userId, [])
-        }
+        const makerType        = positionType === 'long' ? 'short' : 'long';
+        const makerFillMargin  = (fillQty / originalRestingQty) * resting.margin;
+        const makerLiqPrice    = makerType === 'long'
+            ? fillPrice - (makerFillMargin / fillQty)
+            : fillPrice + (makerFillMargin / fillQty);
 
-        POSITIONS.get(userId)?.push(takerPosition);
-        userBalance.locked -= takerFillMargin;
-
-        const makerType = positionType === "long" ? "short" : "long";
-        const makerMargin = resting.margin;
-        const makerLiqPrice = makerType === 'long'
-            ? fillPrice - (makerMargin / fillQty)
-            : fillPrice + (makerMargin / fillQty)
-        
-        const makerPosition: Position = {
-            positionId: crypto.randomUUID(),
-            userId: resting.userId,
+        makerPositions.push({
+            positionId:       crypto.randomUUID(),
+            userId:           resting.userId,
             market,
-            type: makerType,
-            qty: fillQty,
-            margin: makerMargin,
-            unrealizedPnl: 0,
-            realizedPnl: 0,
-            averagePrice: fillPrice,
+            type:             makerType,
+            qty:              fillQty,
+            margin:           makerFillMargin,
+            unrealizedPnl:    0,
+            realizedPnl:      0,
+            averagePrice:     fillPrice,
             liquidationPrice: makerLiqPrice,
-            positionStatus: 'open',
-            createdAt: Date.now()
-        }
+            positionStatus:   'open',
+            createdAt:        Date.now()
+        });
 
-        if(!POSITIONS.has(resting.userId)) POSITIONS.set(resting.userId, []);
-        POSITIONS.get(resting.userId)!.push(makerPosition);
+        const takerBalance = BALANCES.get(userId);
+        if (takerBalance) takerBalance.locked -= takerFillMargin;
 
         const makerBalance = BALANCES.get(resting.userId);
-        if(makerBalance) {
-            makerBalance.locked -= makerMargin;
-        }
+        if (makerBalance) makerBalance.locked -= makerFillMargin;
 
         filledQty += fillQty;
+        book.lastTradedPrice = fillPrice;
     }
 
-    if(filledQty < qty && orderType === "limit") {
-        const restingOrder: RestingOrder = {
-            orderId: order.orderId,
-            userId,
-            side,
-            qty : qty - filledQty,
-            market,
-            price,
-            margin: ((qty - filledQty)/qty) * margin,
-            createdAt: Date.now()
-        };
+    return { filledQty, fills, takerPositions, makerPositions };
+};
 
-        const sideBook = side === 'buy' ? book.bids : book.asks;
-        if(!sideBook.has(price)) sideBook.set(price, []);
-        sideBook.get(price)?.push(restingOrder);
-    }
-    order.status = filledQty === 0 ? 'open'
-        : filledQty < qty ? 'partially_filled'
-        : 'filled';
-
-    return order;
-}
-
-export const deletePositin = (payload: Record<string, unknown>) => {
+export const cancelPosition = (payload: Record<string, unknown>) => {
 
     const userId = payload.userId as string;
     const orderId = payload.orderId as string;
@@ -296,7 +307,7 @@ export const deletePositin = (payload: Record<string, unknown>) => {
         userBalance.locked    -= order.margin;
         userBalance.available += order.margin;
     }
-    
+
     order.status = "cancelled";
     return {
         orderId,
@@ -304,3 +315,4 @@ export const deletePositin = (payload: Record<string, unknown>) => {
     }
 
 }
+

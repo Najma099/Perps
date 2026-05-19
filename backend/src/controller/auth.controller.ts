@@ -1,89 +1,73 @@
 import type { Request, Response } from "express";
 import { prisma } from "../db";
-import { AuthSchema } from "../type/auth.schema";
+import { AuthSchema } from "../types/auth.schema";
 import { sendValidationError } from "../utils/sendValidationError";
 import bcrypt from 'bcrypt';
 import { createToken } from "../utils/createToken";
 
 export const signin = async (req: Request, res: Response) => {
     const parsed = AuthSchema.safeParse(req.body);
-    if(!parsed.success) {
+    if (!parsed.success) {
         sendValidationError(res, parsed.error);
         return;
     }
-    try{
-        const {username, password} = req.body;
+    try {
+        const { username, password } = parsed.data;
         const existingUser = await prisma.user.findUnique({
-            where: {
-                username
-            }
+            where: { username }
         });
 
-        if(!existingUser) {
-            res.status(409).json({
-                message: "Username doesnt exits"
-            });
+        if (!existingUser) {
+            res.status(409).json({ message: "Username doesn't exist" });
             return;
         }
 
         const match = await bcrypt.compare(password, existingUser.password);
-        if(!match) {
-            res.status(400).json({
-                message: 'Invalid Credentials'
-            });
+        if (!match) {
+            res.status(400).json({ message: 'Invalid Credentials' });
+            return;
         }
 
         const token = createToken(existingUser.userId);
-        res.status(201).json({
-            message: 'user signed successfully!',
-            token,
-        });
-    } catch(err) {
-        res.status(500).json({
-            message: 'Internal server error!'
-        });
-        return;
+        res.status(200).json({ message: 'Signed in successfully!', token });
+
+    } catch (err) {
+        res.status(500).json({ message: 'Internal server error!' });
     }
 }
 
-export const signup = async(res: Response, req: Request) => {
+export const signup = async (req: Request, res: Response) => {
     const parsed = AuthSchema.safeParse(req.body);
-    if(!parsed.success) {
+    if (!parsed.success) {
         sendValidationError(res, parsed.error);
         return;
     }
 
-    try{
-        const { username, password} = parsed.data;
+    try {
+        const { username, password } = parsed.data;
         const existingUser = await prisma.user.findUnique({
-            where: {
-                username
-            }
+            where: { username }
         });
 
-        if(existingUser) {
-            res.status(409).json({
-                message: "User already exits"
-            });
+        if (existingUser) {
+            res.status(409).json({ message: "User already exists" });
             return;
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
-            data: {
-                username,
-                password: hashedPassword
-            }
+            data: { username, password: hashedPassword }
         });
 
-        res.status(200).json({
-            message: 'user created sucessfully!'
-        })
+        const token = createToken(user.userId);
+        res.status(201).json({
+            message: 'User created successfully!',
+            userId: user.userId,
+            token
+        });
 
-    } catch(err) {
+    } catch (err) {
         console.log(err);
-        res.status(500).json({
-            message: "Internal server error!"
-        })
+        res.status(500).json({ message: "Internal server error!" });
     }
 }
