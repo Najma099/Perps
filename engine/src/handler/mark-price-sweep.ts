@@ -6,8 +6,8 @@ export const updateMarkPrice = (market: string, markPrice: number) => {
 
     const book = ORDERBOOKS.get(market);
     
-    const allPositions = [...POSITIONS.values()].flat();
-    const marketPositions = allPositions.filter(
+    const allPos = [...POSITIONS.values()].flat();
+    const marketPositions = allPos.filter(
         p => p.market === market && p.positionStatus === 'open'
     );
 
