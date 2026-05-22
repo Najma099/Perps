@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "./generated/prisma"
@@ -12,12 +7,15 @@ datasource db {
   provider = "postgresql"
 }
 
-model User{
-  userId String @id @default(uuid())
-  username String @unique
-  password String
-}
+model User {
+  userId    String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
 
+  balance   Balance?
+  orders    Order[]
+}
 
 enum OrderSide {
   buy
@@ -32,55 +30,58 @@ enum OrderType {
 enum OrderStatus {
   open
   filled
-  cancelled
   partially_filled
+  cancelled
 }
 
-model Order{
-  orderId String @id @default(uuid())
-  userId String 
-  market String
-  side OrderSide
-  qty Int
-  margin Int
-  orderType OrderType
-  price Int
-  status OrderStatus
-  createdAt String
+model Order {
+  orderId       String      @id @default(uuid())
+  correlationId String      @unique
+  userId        String
+  market        String
+  side          OrderSide
+  qty           Int
+  price         Int
+  margin        Int
+  orderType     OrderType
+  status        OrderStatus @default(open)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user          User        @relation(fields: [userId], references: [userId])
+  fills         Fill[]
 }
 
-
-enum PositionStatus {
-  open
-  closed
-}
-
-enum PositionType {
+enum PositionSide {
   long
   short
 }
 
-model Fills {
-  fillsId String @id @default(uuid())
-  side PositionType
-  maker String
-  taker String
-  market String
-  qty Int
-  price Int
-  long String
-  short String
-  positionStatus PositionStatus
-  createdAt String
-}
+model Fill {
+  fillId    String       @id @default(uuid())
+  orderId   String
+  market    String
+  side      PositionSide
+  qty       Int
+  price     Int
+  maker     String
+  taker     String
+  createdAt DateTime     @default(now())
 
-model Market {
-  
+  order     Order        @relation(fields: [orderId], references: [orderId])
 }
 
 model Balance {
-  userId    String @id
-  available Float
-  locked    Float
+  userId    String   @id
+  available Int
+  locked    Int
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [userId])
 }
-//snapshot of the orderbook
+
+model Market {
+  id     String @id @default(uuid())
+  symbol String @unique
+  slug   String @unique
+}
