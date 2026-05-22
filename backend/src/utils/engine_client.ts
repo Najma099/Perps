@@ -40,7 +40,8 @@ export async function sendToEngine(
     payload,
   };
 
-  await publisher.lPush(env.incomingQueue, JSON.stringify(message));
+  //await publisher.lPush(env.incomingQueue, JSON.stringify(message));
+  await publisher.xAdd(env.incomingQueue, "*", { data: JSON.stringify(message)});
   return responsePromise;
 }
 
@@ -48,7 +49,9 @@ export async function listenForEngineResponses(): Promise<void> {
   console.log(`Listening for engine responses on ${env.responseQueue}`);
 
   for (;;) {
-    const response = await subscriber.brPop(env.responseQueue, 0);
+    //const response = await subscriber.brPop(env.responseQueue, 0);
+    const entries = await subscriber.xReadGroup(env.responseQueue, 0);
+    const response = JSON.parse(entries[0].messages[0].message.data);
     if (!response) continue;
 
     try {

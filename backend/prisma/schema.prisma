@@ -17,3 +17,70 @@ model User{
   username String @unique
   password String
 }
+
+
+enum OrderSide {
+  buy
+  sell
+}
+
+enum OrderType {
+  limit
+  market
+}
+
+enum OrderStatus {
+  open
+  filled
+  cancelled
+  partially_filled
+}
+
+model Order{
+  orderId String @id @default(uuid())
+  userId String 
+  market String
+  side OrderSide
+  qty Int
+  margin Int
+  orderType OrderType
+  price Int
+  status OrderStatus
+  createdAt String
+}
+
+
+enum PositionStatus {
+  open
+  closed
+}
+
+enum PositionType {
+  long
+  short
+}
+
+model Fills {
+  fillsId String @id @default(uuid())
+  side PositionType
+  maker String
+  taker String
+  market String
+  qty Int
+  price Int
+  long String
+  short String
+  positionStatus PositionStatus
+  createdAt String
+}
+
+model Market {
+  
+}
+
+model Balance {
+  userId    String @id
+  available Float
+  locked    Float
+}
+//snapshot of the orderbook
