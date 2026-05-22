@@ -13,6 +13,8 @@ import {
   openPosition,
   cancelPosition,
 } from "../src/handler/perbs.handler.js";
+import { parseEngineRequest } from "./utils/redisMessagePaser.js";
+import type { RedisStream } from "./types/redisMessage.js";
 
 export interface EngineRequest {
   correlationId: string;
@@ -31,21 +33,38 @@ export interface EngineResponse {
 const brokerClient = createClient({ url: env.redisUrl }).on("error", (err) =>
   console.error("broker error", err),
 );
+
 const responseClient = createClient({ url: env.redisUrl }).on("error", (err) =>
   console.error("response error", err),
 );
 
 await Promise.all([brokerClient.connect(), responseClient.connect()]);
+
+try {
+  await brokerClient.xGroupCreate(env.incomingQueue, "engine", "$", {
+    MKSTREAM: true,
+  });
+  console.log("Consumer group created");
+} catch (err: any) {
+  if (!err.message.includes("BUSYGROUP")) throw err;
+  console.log("Consumer group already exists, continuing");
+}
+
 startBinanceWs();
 
 async function sendResponse(
   responseQueue: string,
   response: EngineResponse,
 ): Promise<void> {
-  await responseClient.lPush(responseQueue, JSON.stringify(response));
+  await responseClient.xAdd(responseQueue, "*", {
+    correlationId: response.correlationId,
+    ok: String(response.ok),
+    data: JSON.stringify(response.data ?? null),
+    error: response.error ?? "",
+  });
 }
 
-function handleEngineRequest(message: EngineRequest): unknown {
+async function handleEngineRequest(message: EngineRequest): Promise<unknown> {
   switch (message.type) {
     case "onramp":
       return onramp(message.payload);
@@ -70,32 +89,66 @@ function handleEngineRequest(message: EngineRequest): unknown {
   }
 }
 
-console.log(`Perps engine listening on: ${env.incomingQueue}`);
+async function processEntry(
+  entry: RedisStream["messages"][number],
+): Promise<void> {
+  const parsed = parseEngineRequest(entry);
 
-for (;;) {
-  const item = await brokerClient.brPop(env.incomingQueue, 0);
-  if (!item) continue;
+  if (!parsed.success) {
+    console.error("Invalid engine message", {
+      messageId: entry.id,
+      error: parsed.error,
+    });
 
-  let message: EngineRequest;
-  try {
-    message = JSON.parse(item.element) as EngineRequest;
-  } catch {
-    console.error("Skipping invalid message");
-    continue;
+    await brokerClient.xAck(env.incomingQueue, "engine", entry.id);
+    return;
   }
 
+  const message = parsed.data;
+  let response: EngineResponse;
+
   try {
-    const data = handleEngineRequest(message);
-    await sendResponse(message.responseQueue, {
+    const data = await handleEngineRequest(message);
+    response = {
       correlationId: message.correlationId,
       ok: true,
       data,
-    });
+    };
   } catch (error) {
-    await sendResponse(message.responseQueue, {
+    response = {
       correlationId: message.correlationId,
       ok: false,
       error: error instanceof Error ? error.message : "engine_error",
+    };
+  }
+
+  try {
+    await sendResponse(message.responseQueue, response);
+  } catch (err) {
+    console.error("Failed to send response", {
+      correlationId: message.correlationId,
+      err,
     });
+  }
+
+  await brokerClient.xAck(env.incomingQueue, "engine", entry.id);
+}
+
+console.log(`Perps engine listening on: ${env.incomingQueue}`);
+
+for (;;) {
+  const streams = (await brokerClient.xReadGroup(
+    "engine",
+    "worker-1",
+    [{ key: env.incomingQueue, id: ">" }],
+    { COUNT: 1, BLOCK: 2000 },
+  )) as RedisStream[] | null;
+
+  if (!streams) continue;
+
+  for (const stream of streams) {
+    for (const entry of stream.messages) {
+      await processEntry(entry);
+    }
   }
 }
