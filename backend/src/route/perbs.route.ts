@@ -14,9 +14,11 @@ import {
   getAllOrdersSchema,
   getFillsSchema,
 } from "../types/exchange-schema";
-import { getOpenOrderByUserId, getOrdersByUserId } from "../repositories/order.repo";
+import {
+  getOpenOrderByUserId,
+  getOrdersByUserId,
+} from "../repositories/order.repo";
 import { getFillsByUser } from "../repositories/fill.repo";
-
 
 const router = Router();
 
@@ -129,7 +131,7 @@ router.get(
   "/positions/closed/:market",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { userId } = req ;
+    const { userId } = req;
     const parsed = getClosedPositionsSchema.safeParse({
       userId,
       market: req.params.market,
@@ -163,11 +165,9 @@ router.get(
 
     const orders = await getOpenOrderByUserId(
       parsed.data.userId,
-      parsed.data.market
+      parsed.data.market,
     );
-    res
-      .status(200)
-      .json({ orders });
+    res.status(200).json({ orders });
   }),
 );
 
@@ -186,10 +186,11 @@ router.get(
       return;
     }
 
-    const orders = await getOrdersByUserId(parsed.data.userId, parsed.data.market);
-    res
-      .status(200)
-      .json({ orders });
+    const orders = await getOrdersByUserId(
+      parsed.data.userId,
+      parsed.data.market,
+    );
+    res.status(200).json({ orders });
   }),
 );
 
@@ -208,10 +209,8 @@ router.get(
       return;
     }
 
-    const fills = await getFillsByUser(parsed.data.userId)
-    res
-      .status(200)
-      .json({ fills });
+    const fills = await getFillsByUser(parsed.data.userId);
+    res.status(200).json({ fills });
   }),
 );
 

@@ -11,7 +11,7 @@ export async function deductBalance(userId: string, amount: number) {
     where: { userId },
     data: {
       available: { decrement: amount },
-      locked:    { increment: amount },
+      locked: { increment: amount },
     },
   });
 }
@@ -20,7 +20,7 @@ export async function releaseBalance(userId: string, amount: number) {
   return prisma.balance.update({
     where: { userId },
     data: {
-      locked:    { decrement: amount },
+      locked: { decrement: amount },
       available: { increment: amount },
     },
   });

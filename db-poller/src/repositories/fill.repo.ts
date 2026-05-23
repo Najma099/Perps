@@ -1,7 +1,8 @@
 import { prisma } from "@repo/db";
 import type { PositionSide } from "@repo/db/prisma/generated/prisma/enums";
 
-export const createFill = (data: {
+export async function createFill(data: {
+  fillId: string;
   orderId: string;
   market: string;
   side: PositionSide;
@@ -9,20 +10,15 @@ export const createFill = (data: {
   price: number;
   maker: string;
   taker: string;
-}) => {
-  return prisma.fill.create({
-    data,
-  });
-};
+}) {
+  return prisma.fill.create({ data });
+}
 
-export const getFillsByUser = (userId: string, market?: string) => {
+export async function getFillsByUserId(userId: string) {
   return prisma.fill.findMany({
     where: {
-      ...(market ? { market } : {}),
-      OR: [{ maker: userId, taker: userId }],
+      OR: [{ maker: userId }, { taker: userId }],
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { createdAt: "desc" },
   });
-};
+}

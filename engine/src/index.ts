@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { createClient } from "redis";
 import { env } from "./utils/config.js";
+import { hydrateEngine } from "./bootstrap/hydrate.js";
 import startBinanceWs from "../src/ws/binance.js";
 import {
   onramp,
@@ -36,6 +37,8 @@ export const responseClient = createClient({ url: env.redisUrl }).on("error", (e
 );
 
 await Promise.all([brokerClient.connect(), responseClient.connect()]);
+
+await hydrateEngine();
 
 try {
   await brokerClient.xGroupCreate(env.incomingQueue, "engine", "$", {
@@ -143,3 +146,5 @@ for (;;) {
     }
   }
 }
+
+

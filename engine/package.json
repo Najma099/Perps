@@ -6,19 +6,21 @@
   "scripts": {
     "dev": "bun run src/index.ts"
   },
+  "dependencies": {
+    "@repo/db": "../shared/db",
+    "@repo/db-poller": "../db-poller",
+    "@types/ws": "^8.18.1",
+    "db-poller": "../db-poller",
+    "dotenv": "^17.4.2",
+    "redis": "^5.12.1",
+    "ws": "^8.20.1",
+    "zod": "^4.4.3"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^25.8.0"
   },
   "peerDependencies": {
     "typescript": "^5"
-  },
-  "dependencies": {
-    "@types/ws": "^8.18.1",
-    "crypto": "^1.0.1",
-    "dotenv": "^17.4.2",
-    "redis": "^5.12.1",
-    "ws": "^8.20.1",
-    "zod": "^4.4.3"
   }
 }
