@@ -1,0 +1,21 @@
+{
+  "name": "@repo/db",
+  "module": "index.ts",
+  "type": "module",
+  "main": "src/index.ts",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.9.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "dotenv": "^17.4.2",
+    "prisma": "^7.8.0",
+    "zod": "^4.4.3"
+  }
+}
