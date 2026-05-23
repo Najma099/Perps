@@ -5,9 +5,6 @@ import startBinanceWs from "../src/ws/binance.js";
 import {
   onramp,
   getEquity,
-  getFills,
-  getAllOrders,
-  getOpenOrders,
   getOpenPosition,
   getClosePosition,
   openPosition,
@@ -34,7 +31,7 @@ const brokerClient = createClient({ url: env.redisUrl }).on("error", (err) =>
   console.error("broker error", err),
 );
 
-const responseClient = createClient({ url: env.redisUrl }).on("error", (err) =>
+export const responseClient = createClient({ url: env.redisUrl }).on("error", (err) =>
   console.error("response error", err),
 );
 
@@ -70,12 +67,6 @@ async function handleEngineRequest(message: EngineRequest): Promise<unknown> {
       return onramp(message.payload);
     case "get_equity":
       return getEquity(message.payload);
-    case "get_fills":
-      return getFills(message.payload);
-    case "get_open_orders":
-      return getOpenOrders(message.payload);
-    case "get_all_orders":
-      return getAllOrders(message.payload);
     case "get_open_positions":
       return getOpenPosition(message.payload);
     case "get_closed_positions":

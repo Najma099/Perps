@@ -15,6 +15,8 @@ import {
   type RestingOrder,
 } from "../store/perp-store";
 
+import { emitEvent } from "../utils/events";
+
 const seedUserIfNeeded = (userId: string) => {
   if (!BALANCES.has(userId)) {
     BALANCES.set(userId, {
@@ -24,12 +26,17 @@ const seedUserIfNeeded = (userId: string) => {
   }
 };
 
-export const onramp = (payload: Record<string, unknown>) => {
+export const onramp = async (payload: Record<string, unknown>) => {
   const userId = payload.userId as string;
   const amount = payload.amount as number;
 
   seedUserIfNeeded(userId);
   BALANCES.get(userId)!.available += amount;
+
+  await emitEvent("BALANCE_UPDATED", {
+    userId,
+    balance: BALANCES.get(userId),
+  });
 
   return BALANCES.get(userId);
 };
@@ -37,22 +44,31 @@ export const onramp = (payload: Record<string, unknown>) => {
 export const getEquity = (payload: Record<string, unknown>) => {
   const userId = payload.userId as string;
   seedUserIfNeeded(userId);
-  const UserBalance = BALANCES.get(userId);
+  const userBalance = BALANCES.get(userId);
 
-  const available = UserBalance?.available!;
-  const locked = UserBalance?.locked!;
+  const available = userBalance?.available ?? 0;
+  const locked = userBalance?.locked ?? 0;
 
   const unrealized = (POSITIONS.get(userId) ?? [])
     .filter((p) => p.positionStatus === "open")
     .reduce((sum, o) => sum + o.unrealizedPnl, 0);
 
   const total = available + locked + unrealized;
-  return {
-    available,
-    locked,
-    unrealized,
-    total,
-  };
+  return { available, locked, unrealized, total };
+};
+
+export const getOpenPosition = (payload: Record<string, unknown>) => {
+  const userId = payload.userId as string;
+  return (
+    POSITIONS.get(userId)?.filter((o) => o.positionStatus === "open") ?? []
+  );
+};
+
+export const getClosePosition = (payload: Record<string, unknown>) => {
+  const userId = payload.userId as string;
+  return (
+    POSITIONS.get(userId)?.filter((o) => o.positionStatus === "closed") ?? []
+  );
 };
 
 export const getFills = (payload: Record<string, unknown>) => {
@@ -61,7 +77,7 @@ export const getFills = (payload: Record<string, unknown>) => {
 
   for (const marketFills of FILLS.values()) {
     for (const fill of marketFills) {
-      if (fill.maker == userId || fill.taker == userId) {
+      if (fill.maker === userId || fill.taker === userId) {
         fills.push(fill);
       }
     }
@@ -71,37 +87,15 @@ export const getFills = (payload: Record<string, unknown>) => {
 
 export const getAllOrders = (payload: Record<string, unknown>) => {
   const userId = payload.userId as string;
-
-  const orders = ORDERS.get(userId);
-  return orders;
+  return ORDERS.get(userId) ?? [];
 };
 
 export const getOpenOrders = (payload: Record<string, unknown>) => {
   const userId = payload.userId as string;
-
-  const openOrder = ORDERS.get(userId)?.filter((o) => o.status == "open");
-  return openOrder;
+  return ORDERS.get(userId)?.filter((o) => o.status === "open") ?? [];
 };
 
-export const getOpenPosition = (payload: Record<string, unknown>) => {
-  const userId = payload.userId as string;
-
-  const openPosition = POSITIONS.get(userId)?.filter(
-    (o) => o.positionStatus === "open",
-  );
-
-  return openPosition;
-};
-
-export const getClosePosition = (payload: Record<string, unknown>) => {
-  const userId = payload.userId as string;
-  const closePosition = POSITIONS.get(userId)?.filter(
-    (o) => o.positionStatus === "closed",
-  );
-  return closePosition;
-};
-
-export const openPosition = (payload: Record<string, unknown>) => {
+export const openPosition = async (payload: Record<string, unknown>) => {
   const userId = payload.userId as string;
   const market = payload.market as string;
   const side = payload.side as OrderSide;
@@ -134,6 +128,24 @@ export const openPosition = (payload: Record<string, unknown>) => {
   if (!ORDERS.has(userId)) ORDERS.set(userId, []);
   ORDERS.get(userId)!.push(order);
 
+  await emitEvent("ORDER_CREATED", {
+    orderId: order.orderId,
+    userId,
+    market,
+    side,
+    qty,
+    price,
+    margin,
+    orderType,
+    status: order.status,
+    createdAt: order.createdAt,
+  });
+
+  await emitEvent("BALANCE_UPDATED", {
+    userId,
+    balance: BALANCES.get(userId),
+  });
+
   if (!ORDERBOOKS.has(market)) {
     ORDERBOOKS.set(market, {
       asks: new Map(),
@@ -142,8 +154,8 @@ export const openPosition = (payload: Record<string, unknown>) => {
       indexPrice: MARK_PRICE.get(market) ?? 0,
     });
   }
-  const book = ORDERBOOKS.get(market)!;
 
+  const book = ORDERBOOKS.get(market)!;
   const { filledQty, fills, takerPositions, makerPositions } = matchOrder(
     book,
     positionType,
@@ -158,12 +170,69 @@ export const openPosition = (payload: Record<string, unknown>) => {
   if (!FILLS.has(market)) FILLS.set(market, []);
   FILLS.get(market)!.push(...fills);
 
+  for (const fill of fills) {
+    await emitEvent("FILL_CREATED", {
+      fillId: fill.fillId,
+      side: fill.side,
+      maker: fill.maker,
+      taker: fill.taker,
+      market: fill.market,
+      qty: fill.qty,
+      price: fill.price,
+      long: fill.long,
+      short: fill.short,
+      createdAt: fill.createdAt,
+    });
+
+   
+    await emitEvent("BALANCE_UPDATED", {
+      userId: fill.taker,
+      balance: BALANCES.get(fill.taker),
+    });
+
+    
+    await emitEvent("BALANCE_UPDATED", {
+      userId: fill.maker,
+      balance: BALANCES.get(fill.maker),
+    });
+  }
+
+
   if (!POSITIONS.has(userId)) POSITIONS.set(userId, []);
   POSITIONS.get(userId)!.push(...takerPositions);
 
+  for (const position of takerPositions) {
+    await emitEvent("POSITION_OPENED", {
+      positionId: position.positionId,
+      userId: position.userId,
+      market: position.market,
+      type: position.type,
+      qty: position.qty,
+      margin: position.margin,
+      averagePrice: position.averagePrice,
+      liquidationPrice: position.liquidationPrice,
+      positionStatus: position.positionStatus,
+      createdAt: position.createdAt,
+    });
+  }
+
+  // maker positions
   for (const pos of makerPositions) {
     if (!POSITIONS.has(pos.userId)) POSITIONS.set(pos.userId, []);
     POSITIONS.get(pos.userId)!.push(pos);
+
+    await emitEvent("POSITION_OPENED", {
+      positionId: pos.positionId,
+      userId: pos.userId,
+      market: pos.market,
+      type: pos.type,
+      qty: pos.qty,
+      margin: pos.margin,
+      averagePrice: pos.averagePrice,
+      liquidationPrice: pos.liquidationPrice,
+      positionStatus: pos.positionStatus,
+      createdAt: pos.createdAt,
+    });
   }
 
   if (filledQty < qty && orderType === "limit") {
@@ -185,7 +254,68 @@ export const openPosition = (payload: Record<string, unknown>) => {
   order.status =
     filledQty === 0 ? "open" : filledQty < qty ? "partially_filled" : "filled";
 
+  // emit final order status
+  await emitEvent("ORDER_UPDATED", {
+    orderId: order.orderId,
+    userId,
+    market,
+    status: order.status,
+    filledQty,
+    createdAt: order.createdAt,
+  });
+
   return order;
+};
+
+export const cancelPosition = async (payload: Record<string, unknown>) => {
+  const userId = payload.userId as string;
+  const orderId = payload.orderId as string;
+
+  const userOrders = ORDERS.get(userId);
+  const order = userOrders?.find((o) => o.orderId === orderId);
+
+  if (!order) throw new Error("Invalid order Id");
+  if (order.status === "filled")
+    throw new Error("Cannot cancel a filled order");
+  if (order.status === "cancelled") throw new Error("Order already cancelled");
+
+  const book = ORDERBOOKS.get(order.market);
+  if (book) {
+    const sideBook = order.side === "buy" ? book.bids : book.asks;
+    const level = sideBook.get(order.price!);
+
+    if (level) {
+      const filtered = level.filter((o) => o.orderId !== order.orderId);
+      if (filtered.length === 0) {
+        sideBook.delete(order.price!);
+      } else {
+        sideBook.set(order.price!, filtered);
+      }
+    }
+  }
+
+  const userBalance = BALANCES.get(userId);
+  if (userBalance) {
+    userBalance.locked -= order.margin;
+    userBalance.available += order.margin;
+  }
+
+  order.status = "cancelled";
+
+  await emitEvent("ORDER_CANCELLED", {
+    orderId: order.orderId,
+    userId,
+    market: order.market,
+    status: "cancelled",
+  });
+
+  // balance released back to available
+  await emitEvent("BALANCE_UPDATED", {
+    userId,
+    balance: BALANCES.get(userId),
+  });
+
+  return { orderId, status: "cancelled" };
 };
 
 export const matchOrder = (
@@ -307,46 +437,10 @@ export const matchOrder = (
     book.lastTradedPrice = fillPrice;
   }
 
-  return { filledQty, fills, takerPositions: takerPos, makerPositions: makerPos };
-};
-
-export const cancelPosition = (payload: Record<string, unknown>) => {
-  const userId = payload.userId as string;
-  const orderId = payload.orderId as string;
-
-  const userOrders = ORDERS.get(userId);
-  const order = userOrders?.find((o) => o.orderId === orderId);
-
-  if (!order) throw new Error("Invalid order Id");
-
-  if (order.status === "filled")
-    throw new Error("Cannot cancel a filled order");
-  if (order.status === "cancelled") throw new Error("Order already cancelled");
-
-  const book = ORDERBOOKS.get(order.market);
-  if (book) {
-    const side = order.side === "buy" ? book.bids : book.asks;
-    const level = side.get(order.price!);
-
-    if (level) {
-      const filtered = level.filter((o) => o.orderId !== order.orderId);
-      if (filtered.length === 0) {
-        side.delete(order.price!);
-      } else {
-        side.set(order.price!, filtered);
-      }
-    }
-  }
-
-  const userBalance = BALANCES.get(userId);
-  if (userBalance) {
-    userBalance.locked -= order.margin;
-    userBalance.available += order.margin;
-  }
-
-  order.status = "cancelled";
   return {
-    orderId,
-    status: "cancelled",
+    filledQty,
+    fills,
+    takerPositions: takerPos,
+    makerPositions: makerPos,
   };
 };
