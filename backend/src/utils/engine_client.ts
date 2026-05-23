@@ -24,9 +24,6 @@ export interface EngineResponse {
 export type EngineCommandType =
   | "onramp"
   | "get_equity"
-  | "get_fills"
-  | "get_open_orders"
-  | "get_all_orders"
   | "get_open_positions"
   | "get_closed_positions"
   | "open_position"

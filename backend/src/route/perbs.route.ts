@@ -14,6 +14,8 @@ import {
   getAllOrdersSchema,
   getFillsSchema,
 } from "../types/exchange-schema";
+import { getOpenOrderByUserId, getOrdersByUserId } from "../repositories/order.repo";
+import { getFillsByUser } from "../repositories/fill.repo";
 
 
 const router = Router();
@@ -144,6 +146,7 @@ router.get(
   }),
 );
 
+//db
 router.get(
   "/orders/open/:market",
   requireAuth,
@@ -158,13 +161,17 @@ router.get(
       return;
     }
 
-    const response = await sendToEngine("get_open_orders", parsed.data);
+    const orders = await getOpenOrderByUserId(
+      parsed.data.userId,
+      parsed.data.market
+    );
     res
-      .status(response.ok ? 200 : 400)
-      .json(response.ok ? response.data : { error: response.error });
+      .status(200)
+      .json({ orders });
   }),
 );
 
+//db
 router.get(
   "/orders/:market",
   requireAuth,
@@ -179,13 +186,14 @@ router.get(
       return;
     }
 
-    const response = await sendToEngine("get_all_orders", parsed.data);
+    const orders = await getOrdersByUserId(parsed.data.userId, parsed.data.market);
     res
-      .status(response.ok ? 200 : 400)
-      .json(response.ok ? response.data : { error: response.error });
+      .status(200)
+      .json({ orders });
   }),
 );
 
+//db
 router.get(
   "/fills",
   requireAuth,
@@ -200,10 +208,10 @@ router.get(
       return;
     }
 
-    const response = await sendToEngine("get_fills", parsed.data);
+    const fills = await getFillsByUser(parsed.data.userId)
     res
-      .status(response.ok ? 200 : 400)
-      .json(response.ok ? response.data : { error: response.error });
+      .status(200)
+      .json({ fills });
   }),
 );
 

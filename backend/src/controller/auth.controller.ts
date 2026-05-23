@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { prisma } from "../db";
+import { prisma } from "@repo/db";
 import { AuthSchema } from "../types/auth.schema";
 import { sendValidationError } from "../utils/sendValidationError";
 import bcrypt from 'bcrypt';
