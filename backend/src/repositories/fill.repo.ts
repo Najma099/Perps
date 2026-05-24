@@ -19,7 +19,7 @@ export const getFillsByUser = (userId: string, market?: string) => {
   return prisma.fill.findMany({
     where: {
       ...(market ? { market } : {}),
-      OR: [{ maker: userId, taker: userId }],
+      OR: [{ maker: userId }, { taker: userId }],
     },
     orderBy: {
       createdAt: "desc",

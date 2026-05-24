@@ -75,7 +75,7 @@ async function handleEngineRequest(message: EngineRequest): Promise<unknown> {
     case "get_closed_positions":
       return getClosePosition(message.payload);
     case "open_position":
-      return openPosition(message.payload);
+      return openPosition(message.payload, message.correlationId);
     case "cancel_position":
       return cancelPosition(message.payload);
     default:

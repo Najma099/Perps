@@ -42,6 +42,7 @@ export async function processEvent(
           break;
         }
         await createOrder({
+          orderId: parsed.data.orderId,
           correlationId: parsed.data.correlationId,
           userId: parsed.data.userId,
           market: parsed.data.market,

@@ -39,6 +39,7 @@ export const liquidatePosition = (
     if (userBalance) {
         const marginReturned = position.margin + position.realizedPnl;
         userBalance.available += Math.max(0, marginReturned);
+        userBalance.locked -= position.margin;
     }
 
     position.positionStatus = 'closed';

@@ -7,6 +7,7 @@ import type {
 } from "@repo/db/prisma/generated/prisma/enums";
 
 export async function createOrder(data: {
+  orderId: string;
   correlationId: string;
   userId: string;
   market: string;

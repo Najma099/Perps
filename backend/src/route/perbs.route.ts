@@ -51,7 +51,7 @@ router.post(
       side: req.body.side,
       positionType: req.body.positionType,
       qty: req.body.qty,
-      margin: req.body.market,
+      margin: req.body.margin,
       orderType: req.body.orderType,
       price: req.body.price,
     });

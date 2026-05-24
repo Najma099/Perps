@@ -95,7 +95,7 @@ export const getOpenOrders = (payload: Record<string, unknown>) => {
   return ORDERS.get(userId)?.filter((o) => o.status === "open") ?? [];
 };
 
-export const openPosition = async (payload: Record<string, unknown>) => {
+export const openPosition = async (payload: Record<string, unknown>, correlationId?: string) => {
   const userId = payload.userId as string;
   const market = payload.market as string;
   const side = payload.side as OrderSide;
@@ -130,6 +130,7 @@ export const openPosition = async (payload: Record<string, unknown>) => {
 
   await emitEvent("ORDER_CREATED", {
     orderId: order.orderId,
+    correlationId: correlationId ?? "",
     userId,
     market,
     side,
@@ -165,6 +166,7 @@ export const openPosition = async (payload: Record<string, unknown>) => {
     margin,
     userId,
     market,
+    order.orderId,
   );
 
   if (!FILLS.has(market)) FILLS.set(market, []);
@@ -327,6 +329,7 @@ export const matchOrder = (
   margin: number,
   userId: string,
   market: string,
+  takerOrderId?: string,
 ): {
   filledQty: number;
   fills: Fill[];
@@ -370,8 +373,8 @@ export const matchOrder = (
       market,
       qty: fillQty,
       price: fillPrice,
-      long: positionType === "long" ? userId : resting.userId,
-      short: positionType === "short" ? userId : resting.userId,
+      long: positionType === "long" ? (takerOrderId ?? "") : resting.orderId,
+      short: positionType === "short" ? (takerOrderId ?? "") : resting.orderId,
       createdAt: Date.now(),
     });
 
@@ -426,12 +429,6 @@ export const matchOrder = (
       positionStatus: "open",
       createdAt: Date.now(),
     });
-
-    const tBal = BALANCES.get(userId);
-    if (tBal) tBal.locked -= tMargin;
-
-    const mBal = BALANCES.get(resting.userId);
-    if (mBal) mBal.locked -= mMargin;
 
     filledQty += fillQty;
     book.lastTradedPrice = fillPrice;
