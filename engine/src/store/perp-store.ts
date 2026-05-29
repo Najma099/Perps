@@ -1,3 +1,5 @@
+import BTree from "sorted-btree";
+
 export type PositionType = 'long' | 'short';
 export type PositionStatus = 'open' | 'closed'
 export type OrderType = 'limit' | 'market';
@@ -12,7 +14,7 @@ export interface Balance {
 export interface Position {
     positionId: string,
     userId: string,
-    market: string, //symbol 'USD' | 'BTC'
+    market: string, 
     type: PositionType,
     qty: number,
     margin: number,
@@ -20,7 +22,7 @@ export interface Position {
     realizedPnl: number
     averagePrice: number, 
     liquidationPrice: number,
-    positionStatus: PositionStatus, //long | short
+    positionStatus: PositionStatus, 
     createdAt: number,
     closedAt?: number
 }
@@ -50,8 +52,8 @@ export interface RestingOrder {
 }
 
 export interface Orderbook {
-  asks: Map<number, RestingOrder[]>,
-  bids: Map<number, RestingOrder[]>,
+  asks: BTree<number, RestingOrder[]>,
+  bids: BTree<number, RestingOrder[]>,
   lastTradedPrice: number,
   indexPrice: number
 }

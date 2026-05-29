@@ -1,11 +1,9 @@
-import { MARK_PRICE, ORDERBOOKS, POSITIONS } from "../store/perp-store";
+import { MARK_PRICE, POSITIONS } from "../store/perp-store";
 import { liquidatePosition } from "./liquidation";
 
-export const updateMarkPrice = (market: string, markPrice: number) => {
+export const updateMarkPrice = async (market: string, markPrice: number) => {
     MARK_PRICE.set(market, markPrice);
 
-    const book = ORDERBOOKS.get(market);
-    
     const allPos = [...POSITIONS.values()].flat();
     const marketPositions = allPos.filter(
         p => p.market === market && p.positionStatus === 'open'
@@ -17,11 +15,11 @@ export const updateMarkPrice = (market: string, markPrice: number) => {
             : (position.averagePrice - markPrice) * position.qty;
 
         const isLiquidated = position.type === 'long'
-            ? markPrice <= position.liquidationPrice   
-            : markPrice >= position.liquidationPrice;  
+            ? markPrice <= position.liquidationPrice
+            : markPrice >= position.liquidationPrice;
 
         if (isLiquidated) {
-            liquidatePosition(position, market, markPrice);
+            await liquidatePosition(position, market, markPrice);
         }
     }
 };

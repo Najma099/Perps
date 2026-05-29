@@ -3,9 +3,9 @@ import { MARK_PRICE } from "../store/perp-store";
 import { updateMarkPrice } from "../handler/mark-price-sweep";
 
 type BINANCE_RAW_DATA = {
-  E: number; 
+  E: number;
   s: string;
-  p: string; 
+  p: string;
 };
 
 export default function LiveDataFetch() {
@@ -16,27 +16,26 @@ export default function LiveDataFetch() {
     connection.send(
       JSON.stringify({
         method: "SUBSCRIBE",
-        params: ["!markPrice@arr"], 
+        params: ["!markPrice@arr"],
         id: 1,
       }),
     );
   });
 
-
-  connection.on("message", (rawMessage) => { 
+  connection.on("message", async (rawMessage) => {
     const messageString = rawMessage.toString("utf-8");
     const parsedData: BINANCE_RAW_DATA[] = JSON.parse(messageString);
 
     if (!Array.isArray(parsedData)) return;
 
-    (parsedData as BINANCE_RAW_DATA[]).map((data) => {
-        MARK_PRICE.set(data.s, parseFloat(data.p));
-        updateMarkPrice(data.s, parseFloat(data.p));
-    });
+    for (const data of parsedData) {
+      MARK_PRICE.set(data.s, parseFloat(data.p));
+      await updateMarkPrice(data.s, parseFloat(data.p));
+    }
   });
 
   connection.on("error", (error) => {
-    console.error(`Websocket error: ${error.message}`)
+    console.error(`Websocket error: ${error.message}`);
   });
 
   connection.on("close", () => {

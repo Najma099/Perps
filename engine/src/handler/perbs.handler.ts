@@ -1,3 +1,4 @@
+import BTree from "sorted-btree";
 import {
   BALANCES,
   ORDERBOOKS,
@@ -149,15 +150,15 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
 
   if (!ORDERBOOKS.has(market)) {
     ORDERBOOKS.set(market, {
-      asks: new Map(),
-      bids: new Map(),
+      asks: new BTree<number, RestingOrder[]>(),
+      bids: new BTree<number, RestingOrder[]>(),
       lastTradedPrice: MARK_PRICE.get(market) ?? 0,
       indexPrice: MARK_PRICE.get(market) ?? 0,
     });
   }
 
   const book = ORDERBOOKS.get(market)!;
-  const { filledQty, fills, takerPositions, makerPositions } = matchOrder(
+  const { filledQty, fills, takerPositions, makerPositions } = await matchOrder(
     book,
     positionType,
     orderType,
@@ -168,6 +169,14 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
     market,
     order.orderId,
   );
+
+  const filledMargin = (filledQty / qty) * margin;
+  userBalance.locked -= filledMargin;
+
+  await emitEvent("BALANCE_UPDATED", {
+    userId,
+    balance: userBalance,
+  });
 
   if (!FILLS.has(market)) FILLS.set(market, []);
   FILLS.get(market)!.push(...fills);
@@ -186,17 +195,6 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
       createdAt: fill.createdAt,
     });
 
-   
-    await emitEvent("BALANCE_UPDATED", {
-      userId: fill.taker,
-      balance: BALANCES.get(fill.taker),
-    });
-
-    
-    await emitEvent("BALANCE_UPDATED", {
-      userId: fill.maker,
-      balance: BALANCES.get(fill.maker),
-    });
   }
 
 
@@ -277,29 +275,31 @@ export const cancelPosition = async (payload: Record<string, unknown>) => {
   const order = userOrders?.find((o) => o.orderId === orderId);
 
   if (!order) throw new Error("Invalid order Id");
-  if (order.status === "filled")
-    throw new Error("Cannot cancel a filled order");
+  if (order.status === "filled") throw new Error("Cannot cancel a filled order");
   if (order.status === "cancelled") throw new Error("Order already cancelled");
 
   const book = ORDERBOOKS.get(order.market);
-  if (book) {
-    const sideBook = order.side === "buy" ? book.bids : book.asks;
-    const level = sideBook.get(order.price!);
+  if (!book) throw new Error("Orderbook not found");
 
-    if (level) {
-      const filtered = level.filter((o) => o.orderId !== order.orderId);
-      if (filtered.length === 0) {
-        sideBook.delete(order.price!);
-      } else {
-        sideBook.set(order.price!, filtered);
-      }
+  const sideBook = order.side === "buy" ? book.bids : book.asks;
+  const level = sideBook.get(order.price!);
+  const restingOrder = level?.find((o) => o.orderId === orderId);
+
+  const marginToReturn = restingOrder?.margin ?? 0;
+
+  if (level) {
+    const filtered = level.filter((o) => o.orderId !== order.orderId);
+    if (filtered.length === 0) {
+      sideBook.delete(order.price!);
+    } else {
+      sideBook.set(order.price!, filtered);
     }
   }
 
   const userBalance = BALANCES.get(userId);
   if (userBalance) {
-    userBalance.locked -= order.margin;
-    userBalance.available += order.margin;
+    userBalance.locked    -= marginToReturn;
+    userBalance.available += marginToReturn;
   }
 
   order.status = "cancelled";
@@ -311,7 +311,6 @@ export const cancelPosition = async (payload: Record<string, unknown>) => {
     status: "cancelled",
   });
 
-  // balance released back to available
   await emitEvent("BALANCE_UPDATED", {
     userId,
     balance: BALANCES.get(userId),
@@ -320,7 +319,7 @@ export const cancelPosition = async (payload: Record<string, unknown>) => {
   return { orderId, status: "cancelled" };
 };
 
-export const matchOrder = (
+export const matchOrder = async(
   book: Orderbook,
   positionType: PositionType,
   orderType: OrderType,
@@ -330,12 +329,12 @@ export const matchOrder = (
   userId: string,
   market: string,
   takerOrderId?: string,
-): {
+): Promise<{
   filledQty: number;
   fills: Fill[];
   takerPositions: Position[];
   makerPositions: Position[];
-} => {
+}> => {
   const MM = 0.05;
   const opposite = positionType === "long" ? book.asks : book.bids;
 
@@ -346,11 +345,11 @@ export const matchOrder = (
 
   while (filledQty < qty) {
     const remaining = qty - filledQty;
-    const prices = [...opposite.keys()];
-    if (prices.length === 0) break;
-
+  
     const bestPrice =
-      positionType === "long" ? Math.min(...prices) : Math.max(...prices);
+      positionType === "long" ? opposite.minKey() : opposite.maxKey();
+
+    if(bestPrice === undefined) break;
 
     if (orderType === "limit") {
       if (positionType === "long" && bestPrice > price) break;
@@ -384,6 +383,18 @@ export const matchOrder = (
       level.shift();
       if (level.length === 0) opposite.delete(bestPrice);
     }
+
+    const makerBalance = BALANCES.get(resting.userId);
+    if (makerBalance === undefined) {
+      throw new Error(`Balance not found for maker ${resting.userId}`);
+    }
+
+    makerBalance.locked -= (fillQty / origQty) * origMargin;
+
+    await emitEvent("BALANCE_UPDATED", {
+      userId:  resting.userId,
+      balance: makerBalance,
+    });
 
     const tMargin = (fillQty / qty) * margin;
     const tLev = (qty * price) / margin;
