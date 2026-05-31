@@ -2,7 +2,7 @@ import "dotenv/config";
 import { createClient } from "redis";
 import { env } from "./utils/config.js";
 import { hydrateEngine } from "./bootstrap/hydrate.js";
-import startBinanceWs from "../src/ws/binance.js";
+import startBinanceWs from "./ws/binance.js";
 import {
   onramp,
   getEquity,
@@ -10,7 +10,7 @@ import {
   getClosePosition,
   openPosition,
   cancelPosition,
-} from "../src/handler/perbs.handler.js";
+} from "./handler/perbs.handler.js";
 import { parseEngineRequest } from "./utils/redisMessagePaser.js";
 import type { RedisStream } from "./types/redisMessage.js";
 

@@ -21,4 +21,10 @@ export async function hydrateEngine() {
   }
 
   console.log(`Hydrated ${balances.length} balances`);
+
+  const openOrders = await prisma.order.findMany({
+    where: {
+      status: { in: ["open", "partially_filled"] },
+    }
+  });
 }

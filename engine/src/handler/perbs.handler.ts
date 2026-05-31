@@ -120,7 +120,7 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
     side,
     qty,
     margin,
-    orderType,
+    orderType, 
     price,
     status: "open",
     createdAt: Date.now(),
@@ -181,22 +181,6 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
   if (!FILLS.has(market)) FILLS.set(market, []);
   FILLS.get(market)!.push(...fills);
 
-  for (const fill of fills) {
-    await emitEvent("FILL_CREATED", {
-      fillId: fill.fillId,
-      side: fill.side,
-      maker: fill.maker,
-      taker: fill.taker,
-      market: fill.market,
-      qty: fill.qty,
-      price: fill.price,
-      long: fill.long,
-      short: fill.short,
-      createdAt: fill.createdAt,
-    });
-
-  }
-
 
   if (!POSITIONS.has(userId)) POSITIONS.set(userId, []);
   POSITIONS.get(userId)!.push(...takerPositions);
@@ -213,25 +197,6 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
       liquidationPrice: position.liquidationPrice,
       positionStatus: position.positionStatus,
       createdAt: position.createdAt,
-    });
-  }
-
-  // maker positions
-  for (const pos of makerPositions) {
-    if (!POSITIONS.has(pos.userId)) POSITIONS.set(pos.userId, []);
-    POSITIONS.get(pos.userId)!.push(pos);
-
-    await emitEvent("POSITION_OPENED", {
-      positionId: pos.positionId,
-      userId: pos.userId,
-      market: pos.market,
-      type: pos.type,
-      qty: pos.qty,
-      margin: pos.margin,
-      averagePrice: pos.averagePrice,
-      liquidationPrice: pos.liquidationPrice,
-      positionStatus: pos.positionStatus,
-      createdAt: pos.createdAt,
     });
   }
 
@@ -253,16 +218,6 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
 
   order.status =
     filledQty === 0 ? "open" : filledQty < qty ? "partially_filled" : "filled";
-
-  // emit final order status
-  await emitEvent("ORDER_UPDATED", {
-    orderId: order.orderId,
-    userId,
-    market,
-    status: order.status,
-    filledQty,
-    createdAt: order.createdAt,
-  });
 
   return order;
 };
@@ -303,18 +258,6 @@ export const cancelPosition = async (payload: Record<string, unknown>) => {
   }
 
   order.status = "cancelled";
-
-  await emitEvent("ORDER_CANCELLED", {
-    orderId: order.orderId,
-    userId,
-    market: order.market,
-    status: "cancelled",
-  });
-
-  await emitEvent("BALANCE_UPDATED", {
-    userId,
-    balance: BALANCES.get(userId),
-  });
 
   return { orderId, status: "cancelled" };
 };
@@ -391,10 +334,6 @@ export const matchOrder = async(
 
     makerBalance.locked -= (fillQty / origQty) * origMargin;
 
-    await emitEvent("BALANCE_UPDATED", {
-      userId:  resting.userId,
-      balance: makerBalance,
-    });
 
     const tMargin = (fillQty / qty) * margin;
     const tLev = (qty * price) / margin;
@@ -402,6 +341,7 @@ export const matchOrder = async(
       positionType === "long"
         ? fillPrice * (1 - 1 / tLev + MM)
         : fillPrice * (1 + 1 / tLev - MM);
+
 
     takerPos.push({
       positionId: crypto.randomUUID(),

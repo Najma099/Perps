@@ -4,7 +4,7 @@ import {
   resolveEngineResponse,
   waitForEngineResponse,
 } from "../store/pending_response.js";
-import { parseEngineResponse } from "../utils/redisMessageParser.js";
+import { parseEngineResponse } from "./redisMessageParser.js";
 import type { RedisStream } from "../types/redisMessage.js";
 
 export interface EngineRequest {

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createClient } from "redis";
-import { processEvent } from "../src/consumers/eventConsumer.js";
-import type { RedisStream } from "../src/types/redisMessage.js";
+import { processEvent } from "./consumers/eventConsumer.js";
+import type { RedisStream } from "./types/redisMessage.js";
 
 const REDIS_URL = process.env.REDIS_URL!;
 const EVENTS_QUEUE = process.env.EVENTS_QUEUE!;

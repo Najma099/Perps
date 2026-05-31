@@ -6,7 +6,7 @@ A high-performance order matching engine built with Redis Streams, Node.js, and 
 
 ## Architecture Overview
 
-![Architecture Overview](./architecture_overview.png)
+![Architecture Overview](./public/images/architecture_overview.png)
 
 The system has three independent services that communicate through Redis Streams.
 
@@ -49,7 +49,7 @@ By using `COUNT 1` in `xReadGroup`, the engine picks up and fully processes one 
 
 ## The Correlation Pattern
 
-![Correlation Pattern](./correlation_overview.png)
+![Correlation Pattern](./public/images/correlation_overview.png)
 
 How a single HTTP request travels through the system and comes back:
 
