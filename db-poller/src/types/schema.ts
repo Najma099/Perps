@@ -8,9 +8,9 @@ export const OrderCreatedSchema = z.object({
   side: z.enum(["buy", "sell"]),
   qty: z.number(),
   price: z.number(),
-  margin: z.number(),
+  leverage: z.number(),
   orderType: z.enum(["limit", "market"]),
-  status: z.enum(["open", "filled", "partially_filled", "cancelled"]),
+  status: z.string(),
   createdAt: z.number(),
 });
 
@@ -29,7 +29,7 @@ export const OrderCancelledSchema = z.object({
 
 export const FillCreatedSchema = z.object({
   fillId: z.string(),
-  side: z.enum(["long", "short"]),
+  side: z.enum(["buy", "sell"]),
   maker: z.string(),
   taker: z.string(),
   market: z.string(),
@@ -38,6 +38,28 @@ export const FillCreatedSchema = z.object({
   long: z.string(),
   short: z.string(),
   createdAt: z.number(),
+});
+
+export const PositionOpenedSchema = z.object({
+  positionId: z.string(),
+  userId: z.string(),
+  market: z.string(),
+  type: z.enum(["long", "short"]),
+  qty: z.number(),
+  margin: z.number(),
+  leverage: z.number(),          
+  averagePrice: z.number(),
+  liquidationPrice: z.number(),
+  positionStatus: z.string(),
+  createdAt: z.number(),
+});
+
+export const PositionClosedSchema = z.object({
+  positionId: z.string(),
+  userId: z.string(),
+  market: z.string(),
+  realizedPnl: z.number(),
+  closedAt: z.number(),
 });
 
 export const BalanceUpdatedSchema = z.object({

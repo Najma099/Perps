@@ -18,8 +18,9 @@ export interface Position {
     type: PositionType,
     qty: number,
     margin: number,
+    leverage: number,
     unrealizedPnl: number,
-    realizedPnl: number
+    realizedPnl: number,
     averagePrice: number, 
     liquidationPrice: number,
     positionStatus: PositionStatus, 
@@ -33,7 +34,7 @@ export interface Order {
     market: string,
     side: OrderSide,
     qty: number,
-    margin: number,
+    leverage: number,
     orderType: OrderType,
     price: number,
     status: OrderStatus,
@@ -60,7 +61,7 @@ export interface Orderbook {
 
 export interface Fill {
     fillId: string,
-    side: PositionType,
+    side: OrderSide,
     maker: string,
     taker: string,
     market: string,

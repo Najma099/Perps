@@ -51,7 +51,7 @@ router.post(
       side: req.body.side,
       positionType: req.body.positionType,
       qty: req.body.qty,
-      margin: req.body.margin,
+      leverage: req.body.leverage,
       orderType: req.body.orderType,
       price: req.body.price,
     });
@@ -209,7 +209,7 @@ router.get(
       return;
     }
 
-    const fills = await getFillsByUser(parsed.data.userId);
+    const fills = await getFillsByUser(parsed.data.userId, parsed.data.market);
     res.status(200).json({ fills });
   }),
 );

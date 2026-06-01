@@ -40,7 +40,7 @@ export type FillMinAggregateOutputType = {
   fillId: string | null
   orderId: string | null
   market: string | null
-  side: $Enums.PositionSide | null
+  side: $Enums.OrderSide | null
   qty: number | null
   price: number | null
   maker: string | null
@@ -52,7 +52,7 @@ export type FillMaxAggregateOutputType = {
   fillId: string | null
   orderId: string | null
   market: string | null
-  side: $Enums.PositionSide | null
+  side: $Enums.OrderSide | null
   qty: number | null
   price: number | null
   maker: string | null
@@ -211,7 +211,7 @@ export type FillGroupByOutputType = {
   fillId: string
   orderId: string
   market: string
-  side: $Enums.PositionSide
+  side: $Enums.OrderSide
   qty: number
   price: number
   maker: string
@@ -246,9 +246,9 @@ export type FillWhereInput = {
   fillId?: Prisma.StringFilter<"Fill"> | string
   orderId?: Prisma.StringFilter<"Fill"> | string
   market?: Prisma.StringFilter<"Fill"> | string
-  side?: Prisma.EnumPositionSideFilter<"Fill"> | $Enums.PositionSide
-  qty?: Prisma.IntFilter<"Fill"> | number
-  price?: Prisma.IntFilter<"Fill"> | number
+  side?: Prisma.EnumOrderSideFilter<"Fill"> | $Enums.OrderSide
+  qty?: Prisma.FloatFilter<"Fill"> | number
+  price?: Prisma.FloatFilter<"Fill"> | number
   maker?: Prisma.StringFilter<"Fill"> | string
   taker?: Prisma.StringFilter<"Fill"> | string
   createdAt?: Prisma.DateTimeFilter<"Fill"> | Date | string
@@ -275,9 +275,9 @@ export type FillWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.FillWhereInput | Prisma.FillWhereInput[]
   orderId?: Prisma.StringFilter<"Fill"> | string
   market?: Prisma.StringFilter<"Fill"> | string
-  side?: Prisma.EnumPositionSideFilter<"Fill"> | $Enums.PositionSide
-  qty?: Prisma.IntFilter<"Fill"> | number
-  price?: Prisma.IntFilter<"Fill"> | number
+  side?: Prisma.EnumOrderSideFilter<"Fill"> | $Enums.OrderSide
+  qty?: Prisma.FloatFilter<"Fill"> | number
+  price?: Prisma.FloatFilter<"Fill"> | number
   maker?: Prisma.StringFilter<"Fill"> | string
   taker?: Prisma.StringFilter<"Fill"> | string
   createdAt?: Prisma.DateTimeFilter<"Fill"> | Date | string
@@ -308,9 +308,9 @@ export type FillScalarWhereWithAggregatesInput = {
   fillId?: Prisma.StringWithAggregatesFilter<"Fill"> | string
   orderId?: Prisma.StringWithAggregatesFilter<"Fill"> | string
   market?: Prisma.StringWithAggregatesFilter<"Fill"> | string
-  side?: Prisma.EnumPositionSideWithAggregatesFilter<"Fill"> | $Enums.PositionSide
-  qty?: Prisma.IntWithAggregatesFilter<"Fill"> | number
-  price?: Prisma.IntWithAggregatesFilter<"Fill"> | number
+  side?: Prisma.EnumOrderSideWithAggregatesFilter<"Fill"> | $Enums.OrderSide
+  qty?: Prisma.FloatWithAggregatesFilter<"Fill"> | number
+  price?: Prisma.FloatWithAggregatesFilter<"Fill"> | number
   maker?: Prisma.StringWithAggregatesFilter<"Fill"> | string
   taker?: Prisma.StringWithAggregatesFilter<"Fill"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Fill"> | Date | string
@@ -319,7 +319,7 @@ export type FillScalarWhereWithAggregatesInput = {
 export type FillCreateInput = {
   fillId?: string
   market: string
-  side: $Enums.PositionSide
+  side: $Enums.OrderSide
   qty: number
   price: number
   maker: string
@@ -332,7 +332,7 @@ export type FillUncheckedCreateInput = {
   fillId?: string
   orderId: string
   market: string
-  side: $Enums.PositionSide
+  side: $Enums.OrderSide
   qty: number
   price: number
   maker: string
@@ -343,9 +343,9 @@ export type FillUncheckedCreateInput = {
 export type FillUpdateInput = {
   fillId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumPositionSideFieldUpdateOperationsInput | $Enums.PositionSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
+  side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
   maker?: Prisma.StringFieldUpdateOperationsInput | string
   taker?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -356,9 +356,9 @@ export type FillUncheckedUpdateInput = {
   fillId?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumPositionSideFieldUpdateOperationsInput | $Enums.PositionSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
+  side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
   maker?: Prisma.StringFieldUpdateOperationsInput | string
   taker?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -368,7 +368,7 @@ export type FillCreateManyInput = {
   fillId?: string
   orderId: string
   market: string
-  side: $Enums.PositionSide
+  side: $Enums.OrderSide
   qty: number
   price: number
   maker: string
@@ -379,9 +379,9 @@ export type FillCreateManyInput = {
 export type FillUpdateManyMutationInput = {
   fillId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumPositionSideFieldUpdateOperationsInput | $Enums.PositionSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
+  side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
   maker?: Prisma.StringFieldUpdateOperationsInput | string
   taker?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -391,9 +391,9 @@ export type FillUncheckedUpdateManyInput = {
   fillId?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumPositionSideFieldUpdateOperationsInput | $Enums.PositionSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
+  side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
   maker?: Prisma.StringFieldUpdateOperationsInput | string
   taker?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -497,14 +497,10 @@ export type FillUncheckedUpdateManyWithoutOrderNestedInput = {
   deleteMany?: Prisma.FillScalarWhereInput | Prisma.FillScalarWhereInput[]
 }
 
-export type EnumPositionSideFieldUpdateOperationsInput = {
-  set?: $Enums.PositionSide
-}
-
 export type FillCreateWithoutOrderInput = {
   fillId?: string
   market: string
-  side: $Enums.PositionSide
+  side: $Enums.OrderSide
   qty: number
   price: number
   maker: string
@@ -515,7 +511,7 @@ export type FillCreateWithoutOrderInput = {
 export type FillUncheckedCreateWithoutOrderInput = {
   fillId?: string
   market: string
-  side: $Enums.PositionSide
+  side: $Enums.OrderSide
   qty: number
   price: number
   maker: string
@@ -556,9 +552,9 @@ export type FillScalarWhereInput = {
   fillId?: Prisma.StringFilter<"Fill"> | string
   orderId?: Prisma.StringFilter<"Fill"> | string
   market?: Prisma.StringFilter<"Fill"> | string
-  side?: Prisma.EnumPositionSideFilter<"Fill"> | $Enums.PositionSide
-  qty?: Prisma.IntFilter<"Fill"> | number
-  price?: Prisma.IntFilter<"Fill"> | number
+  side?: Prisma.EnumOrderSideFilter<"Fill"> | $Enums.OrderSide
+  qty?: Prisma.FloatFilter<"Fill"> | number
+  price?: Prisma.FloatFilter<"Fill"> | number
   maker?: Prisma.StringFilter<"Fill"> | string
   taker?: Prisma.StringFilter<"Fill"> | string
   createdAt?: Prisma.DateTimeFilter<"Fill"> | Date | string
@@ -567,7 +563,7 @@ export type FillScalarWhereInput = {
 export type FillCreateManyOrderInput = {
   fillId?: string
   market: string
-  side: $Enums.PositionSide
+  side: $Enums.OrderSide
   qty: number
   price: number
   maker: string
@@ -578,9 +574,9 @@ export type FillCreateManyOrderInput = {
 export type FillUpdateWithoutOrderInput = {
   fillId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumPositionSideFieldUpdateOperationsInput | $Enums.PositionSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
+  side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
   maker?: Prisma.StringFieldUpdateOperationsInput | string
   taker?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -589,9 +585,9 @@ export type FillUpdateWithoutOrderInput = {
 export type FillUncheckedUpdateWithoutOrderInput = {
   fillId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumPositionSideFieldUpdateOperationsInput | $Enums.PositionSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
+  side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
   maker?: Prisma.StringFieldUpdateOperationsInput | string
   taker?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -600,9 +596,9 @@ export type FillUncheckedUpdateWithoutOrderInput = {
 export type FillUncheckedUpdateManyWithoutOrderInput = {
   fillId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
-  side?: Prisma.EnumPositionSideFieldUpdateOperationsInput | $Enums.PositionSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
+  side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
   maker?: Prisma.StringFieldUpdateOperationsInput | string
   taker?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -681,7 +677,7 @@ export type $FillPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     fillId: string
     orderId: string
     market: string
-    side: $Enums.PositionSide
+    side: $Enums.OrderSide
     qty: number
     price: number
     maker: string
@@ -1114,9 +1110,9 @@ export interface FillFieldRefs {
   readonly fillId: Prisma.FieldRef<"Fill", 'String'>
   readonly orderId: Prisma.FieldRef<"Fill", 'String'>
   readonly market: Prisma.FieldRef<"Fill", 'String'>
-  readonly side: Prisma.FieldRef<"Fill", 'PositionSide'>
-  readonly qty: Prisma.FieldRef<"Fill", 'Int'>
-  readonly price: Prisma.FieldRef<"Fill", 'Int'>
+  readonly side: Prisma.FieldRef<"Fill", 'OrderSide'>
+  readonly qty: Prisma.FieldRef<"Fill", 'Float'>
+  readonly price: Prisma.FieldRef<"Fill", 'Float'>
   readonly maker: Prisma.FieldRef<"Fill", 'String'>
   readonly taker: Prisma.FieldRef<"Fill", 'String'>
   readonly createdAt: Prisma.FieldRef<"Fill", 'DateTime'>

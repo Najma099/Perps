@@ -14,7 +14,7 @@ export async function createOrder(data: {
   side: OrderSide;
   qty: number;
   price: number;
-  margin: number;
+  leverage: number;
   orderType: OrderType;
 }) {
   return prisma.order.create({ data });

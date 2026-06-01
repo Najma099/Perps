@@ -15,7 +15,7 @@ export const openPositionSchema = z.object({
   side: orderSideSchema,
   positionType: positionTypeSchema,
   qty: z.number().positive(),
-  margin: z.number().positive(),
+  leverage: z.number().positive(),
   orderType: orderTypeSchema,
   price: z.number().positive(),
 });

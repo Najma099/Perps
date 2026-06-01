@@ -54,6 +54,7 @@ export const ModelName = {
   User: 'User',
   Order: 'Order',
   Fill: 'Fill',
+  Position: 'Position',
   Balance: 'Balance',
   Market: 'Market'
 } as const
@@ -92,11 +93,10 @@ export const OrderScalarFieldEnum = {
   side: 'side',
   qty: 'qty',
   price: 'price',
-  margin: 'margin',
+  leverage: 'leverage',
   orderType: 'orderType',
   status: 'status',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  createdAt: 'createdAt'
 } as const
 
 export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
@@ -115,6 +115,25 @@ export const FillScalarFieldEnum = {
 } as const
 
 export type FillScalarFieldEnum = (typeof FillScalarFieldEnum)[keyof typeof FillScalarFieldEnum]
+
+
+export const PositionScalarFieldEnum = {
+  positionId: 'positionId',
+  userId: 'userId',
+  market: 'market',
+  type: 'type',
+  qty: 'qty',
+  margin: 'margin',
+  leverage: 'leverage',
+  averagePrice: 'averagePrice',
+  liquidationPrice: 'liquidationPrice',
+  realizedPnl: 'realizedPnl',
+  positionStatus: 'positionStatus',
+  createdAt: 'createdAt',
+  closedAt: 'closedAt'
+} as const
+
+export type PositionScalarFieldEnum = (typeof PositionScalarFieldEnum)[keyof typeof PositionScalarFieldEnum]
 
 
 export const BalanceScalarFieldEnum = {
@@ -150,4 +169,12 @@ export const QueryMode = {
 } as const
 
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

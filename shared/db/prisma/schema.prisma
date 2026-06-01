@@ -15,6 +15,7 @@ model User {
 
   balance   Balance?
   orders    Order[]
+  positions Position[]
 }
 
 enum OrderSide {
@@ -40,13 +41,12 @@ model Order {
   userId        String
   market        String
   side          OrderSide
-  qty           Int
-  price         Int
-  margin        Int
+  qty           Float
+  price         Float
+  leverage      Float
   orderType     OrderType
   status        OrderStatus @default(open)
   createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
 
   user          User        @relation(fields: [userId], references: [userId])
   fills         Fill[]
@@ -58,23 +58,41 @@ enum PositionSide {
 }
 
 model Fill {
-  fillId    String       @id @default(uuid())
+  fillId    String    @id @default(uuid())
   orderId   String
   market    String
-  side      PositionSide
-  qty       Int
-  price     Int
+  side      OrderSide
+  qty       Float
+  price     Float
   maker     String
   taker     String
-  createdAt DateTime     @default(now())
+  createdAt DateTime  @default(now())
 
-  order     Order        @relation(fields: [orderId], references: [orderId])
+  order     Order     @relation(fields: [orderId], references: [orderId])
+}
+
+model Position {
+  positionId       String         @id @default(uuid())
+  userId           String
+  market           String
+  type             PositionSide
+  qty              Float
+  margin           Float
+  leverage         Float
+  averagePrice     Float
+  liquidationPrice Float
+  realizedPnl      Float          @default(0)
+  positionStatus   String
+  createdAt        DateTime       @default(now())
+  closedAt         DateTime?
+
+  user             User           @relation(fields: [userId], references: [userId])
 }
 
 model Balance {
   userId    String   @id
-  available Int
-  locked    Int
+  available Float
+  locked    Float
   updatedAt DateTime @updatedAt
 
   user      User     @relation(fields: [userId], references: [userId])

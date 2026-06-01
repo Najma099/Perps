@@ -1,11 +1,11 @@
 import { prisma } from "@repo/db";
-import type { PositionSide } from "@repo/db/prisma/generated/prisma/enums";
+import type { OrderSide } from "@repo/db/prisma/generated/prisma/enums";
 
 export async function createFill(data: {
   fillId: string;
   orderId: string;
   market: string;
-  side: PositionSide;
+  side: OrderSide;
   qty: number;
   price: number;
   maker: string;

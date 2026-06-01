@@ -9,7 +9,13 @@ import {
   OrderCancelledSchema,
   OrderCreatedSchema,
   OrderUpdatedSchema,
+  PositionOpenedSchema,
+  PositionClosedSchema,
 } from "../types/schema.js";
+import {
+  upsertPosition,
+  closePosition,
+} from "../repositories/position.repo.js";
 
 export async function processEvent(
   entry: RedisStreamMessage,
@@ -49,7 +55,7 @@ export async function processEvent(
           side: parsed.data.side,
           qty: parsed.data.qty,
           price: parsed.data.price,
-          margin: parsed.data.margin,
+          leverage: parsed.data.leverage,
           orderType: parsed.data.orderType,
         });
         console.log("ORDER_CREATED persisted", parsed.data.orderId);
@@ -90,7 +96,8 @@ export async function processEvent(
         }
         await createFill({
           fillId: parsed.data.fillId,
-          orderId: parsed.data.long,
+          orderId:
+            parsed.data.side === "buy" ? parsed.data.long : parsed.data.short,
           market: parsed.data.market,
           side: parsed.data.side,
           qty: parsed.data.qty,
@@ -99,6 +106,44 @@ export async function processEvent(
           taker: parsed.data.taker,
         });
         console.log("FILL_CREATED persisted", parsed.data.fillId);
+        break;
+      }
+
+      case "POSITION_OPENED": {
+        const parsed = PositionOpenedSchema.safeParse(payload);
+        if (!parsed.success) {
+          console.error("POSITION_OPENED invalid", parsed.error.message);
+          break;
+        }
+        await upsertPosition({
+          positionId: parsed.data.positionId,
+          userId: parsed.data.userId,
+          market: parsed.data.market,
+          type: parsed.data.type,
+          qty: parsed.data.qty,
+          margin: parsed.data.margin,
+          leverage: parsed.data.leverage,
+          averagePrice: parsed.data.averagePrice,
+          liquidationPrice: parsed.data.liquidationPrice,
+          positionStatus: parsed.data.positionStatus,
+          createdAt: new Date(parsed.data.createdAt),
+        });
+        console.log("POSITION_OPENED persisted", parsed.data.positionId);
+        break;
+      }
+
+      case "POSITION_CLOSED": {
+        const parsed = PositionClosedSchema.safeParse(payload);
+        if (!parsed.success) {
+          console.error("POSITION_CLOSED invalid", parsed.error.message);
+          break;
+        }
+        await closePosition({
+          positionId: parsed.data.positionId,
+          realizedPnl: parsed.data.realizedPnl,
+          closedAt: new Date(parsed.data.closedAt),
+        });
+        console.log("POSITION_CLOSED persisted", parsed.data.positionId);
         break;
       }
 

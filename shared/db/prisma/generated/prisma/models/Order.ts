@@ -29,13 +29,13 @@ export type AggregateOrder = {
 export type OrderAvgAggregateOutputType = {
   qty: number | null
   price: number | null
-  margin: number | null
+  leverage: number | null
 }
 
 export type OrderSumAggregateOutputType = {
   qty: number | null
   price: number | null
-  margin: number | null
+  leverage: number | null
 }
 
 export type OrderMinAggregateOutputType = {
@@ -46,11 +46,10 @@ export type OrderMinAggregateOutputType = {
   side: $Enums.OrderSide | null
   qty: number | null
   price: number | null
-  margin: number | null
+  leverage: number | null
   orderType: $Enums.OrderType | null
   status: $Enums.OrderStatus | null
   createdAt: Date | null
-  updatedAt: Date | null
 }
 
 export type OrderMaxAggregateOutputType = {
@@ -61,11 +60,10 @@ export type OrderMaxAggregateOutputType = {
   side: $Enums.OrderSide | null
   qty: number | null
   price: number | null
-  margin: number | null
+  leverage: number | null
   orderType: $Enums.OrderType | null
   status: $Enums.OrderStatus | null
   createdAt: Date | null
-  updatedAt: Date | null
 }
 
 export type OrderCountAggregateOutputType = {
@@ -76,11 +74,10 @@ export type OrderCountAggregateOutputType = {
   side: number
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: number
   status: number
   createdAt: number
-  updatedAt: number
   _all: number
 }
 
@@ -88,13 +85,13 @@ export type OrderCountAggregateOutputType = {
 export type OrderAvgAggregateInputType = {
   qty?: true
   price?: true
-  margin?: true
+  leverage?: true
 }
 
 export type OrderSumAggregateInputType = {
   qty?: true
   price?: true
-  margin?: true
+  leverage?: true
 }
 
 export type OrderMinAggregateInputType = {
@@ -105,11 +102,10 @@ export type OrderMinAggregateInputType = {
   side?: true
   qty?: true
   price?: true
-  margin?: true
+  leverage?: true
   orderType?: true
   status?: true
   createdAt?: true
-  updatedAt?: true
 }
 
 export type OrderMaxAggregateInputType = {
@@ -120,11 +116,10 @@ export type OrderMaxAggregateInputType = {
   side?: true
   qty?: true
   price?: true
-  margin?: true
+  leverage?: true
   orderType?: true
   status?: true
   createdAt?: true
-  updatedAt?: true
 }
 
 export type OrderCountAggregateInputType = {
@@ -135,11 +130,10 @@ export type OrderCountAggregateInputType = {
   side?: true
   qty?: true
   price?: true
-  margin?: true
+  leverage?: true
   orderType?: true
   status?: true
   createdAt?: true
-  updatedAt?: true
   _all?: true
 }
 
@@ -237,11 +231,10 @@ export type OrderGroupByOutputType = {
   side: $Enums.OrderSide
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: $Enums.OrderType
   status: $Enums.OrderStatus
   createdAt: Date
-  updatedAt: Date
   _count: OrderCountAggregateOutputType | null
   _avg: OrderAvgAggregateOutputType | null
   _sum: OrderSumAggregateOutputType | null
@@ -273,13 +266,12 @@ export type OrderWhereInput = {
   userId?: Prisma.StringFilter<"Order"> | string
   market?: Prisma.StringFilter<"Order"> | string
   side?: Prisma.EnumOrderSideFilter<"Order"> | $Enums.OrderSide
-  qty?: Prisma.IntFilter<"Order"> | number
-  price?: Prisma.IntFilter<"Order"> | number
-  margin?: Prisma.IntFilter<"Order"> | number
+  qty?: Prisma.FloatFilter<"Order"> | number
+  price?: Prisma.FloatFilter<"Order"> | number
+  leverage?: Prisma.FloatFilter<"Order"> | number
   orderType?: Prisma.EnumOrderTypeFilter<"Order"> | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   fills?: Prisma.FillListRelationFilter
 }
@@ -292,11 +284,10 @@ export type OrderOrderByWithRelationInput = {
   side?: Prisma.SortOrder
   qty?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  margin?: Prisma.SortOrder
+  leverage?: Prisma.SortOrder
   orderType?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   fills?: Prisma.FillOrderByRelationAggregateInput
 }
@@ -310,13 +301,12 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   userId?: Prisma.StringFilter<"Order"> | string
   market?: Prisma.StringFilter<"Order"> | string
   side?: Prisma.EnumOrderSideFilter<"Order"> | $Enums.OrderSide
-  qty?: Prisma.IntFilter<"Order"> | number
-  price?: Prisma.IntFilter<"Order"> | number
-  margin?: Prisma.IntFilter<"Order"> | number
+  qty?: Prisma.FloatFilter<"Order"> | number
+  price?: Prisma.FloatFilter<"Order"> | number
+  leverage?: Prisma.FloatFilter<"Order"> | number
   orderType?: Prisma.EnumOrderTypeFilter<"Order"> | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   fills?: Prisma.FillListRelationFilter
 }, "orderId" | "correlationId">
@@ -329,11 +319,10 @@ export type OrderOrderByWithAggregationInput = {
   side?: Prisma.SortOrder
   qty?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  margin?: Prisma.SortOrder
+  leverage?: Prisma.SortOrder
   orderType?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
   _count?: Prisma.OrderCountOrderByAggregateInput
   _avg?: Prisma.OrderAvgOrderByAggregateInput
   _max?: Prisma.OrderMaxOrderByAggregateInput
@@ -350,13 +339,12 @@ export type OrderScalarWhereWithAggregatesInput = {
   userId?: Prisma.StringWithAggregatesFilter<"Order"> | string
   market?: Prisma.StringWithAggregatesFilter<"Order"> | string
   side?: Prisma.EnumOrderSideWithAggregatesFilter<"Order"> | $Enums.OrderSide
-  qty?: Prisma.IntWithAggregatesFilter<"Order"> | number
-  price?: Prisma.IntWithAggregatesFilter<"Order"> | number
-  margin?: Prisma.IntWithAggregatesFilter<"Order"> | number
+  qty?: Prisma.FloatWithAggregatesFilter<"Order"> | number
+  price?: Prisma.FloatWithAggregatesFilter<"Order"> | number
+  leverage?: Prisma.FloatWithAggregatesFilter<"Order"> | number
   orderType?: Prisma.EnumOrderTypeWithAggregatesFilter<"Order"> | $Enums.OrderType
   status?: Prisma.EnumOrderStatusWithAggregatesFilter<"Order"> | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
-  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
 }
 
 export type OrderCreateInput = {
@@ -366,11 +354,10 @@ export type OrderCreateInput = {
   side: $Enums.OrderSide
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: $Enums.OrderType
   status?: $Enums.OrderStatus
   createdAt?: Date | string
-  updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutOrdersInput
   fills?: Prisma.FillCreateNestedManyWithoutOrderInput
 }
@@ -383,11 +370,10 @@ export type OrderUncheckedCreateInput = {
   side: $Enums.OrderSide
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: $Enums.OrderType
   status?: $Enums.OrderStatus
   createdAt?: Date | string
-  updatedAt?: Date | string
   fills?: Prisma.FillUncheckedCreateNestedManyWithoutOrderInput
 }
 
@@ -396,13 +382,12 @@ export type OrderUpdateInput = {
   correlationId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
   side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
-  margin?: Prisma.IntFieldUpdateOperationsInput | number
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
+  leverage?: Prisma.FloatFieldUpdateOperationsInput | number
   orderType?: Prisma.EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutOrdersNestedInput
   fills?: Prisma.FillUpdateManyWithoutOrderNestedInput
 }
@@ -413,13 +398,12 @@ export type OrderUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
   side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
-  margin?: Prisma.IntFieldUpdateOperationsInput | number
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
+  leverage?: Prisma.FloatFieldUpdateOperationsInput | number
   orderType?: Prisma.EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fills?: Prisma.FillUncheckedUpdateManyWithoutOrderNestedInput
 }
 
@@ -431,11 +415,10 @@ export type OrderCreateManyInput = {
   side: $Enums.OrderSide
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: $Enums.OrderType
   status?: $Enums.OrderStatus
   createdAt?: Date | string
-  updatedAt?: Date | string
 }
 
 export type OrderUpdateManyMutationInput = {
@@ -443,13 +426,12 @@ export type OrderUpdateManyMutationInput = {
   correlationId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
   side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
-  margin?: Prisma.IntFieldUpdateOperationsInput | number
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
+  leverage?: Prisma.FloatFieldUpdateOperationsInput | number
   orderType?: Prisma.EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OrderUncheckedUpdateManyInput = {
@@ -458,13 +440,12 @@ export type OrderUncheckedUpdateManyInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
   side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
-  margin?: Prisma.IntFieldUpdateOperationsInput | number
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
+  leverage?: Prisma.FloatFieldUpdateOperationsInput | number
   orderType?: Prisma.EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OrderListRelationFilter = {
@@ -485,17 +466,16 @@ export type OrderCountOrderByAggregateInput = {
   side?: Prisma.SortOrder
   qty?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  margin?: Prisma.SortOrder
+  leverage?: Prisma.SortOrder
   orderType?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
 }
 
 export type OrderAvgOrderByAggregateInput = {
   qty?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  margin?: Prisma.SortOrder
+  leverage?: Prisma.SortOrder
 }
 
 export type OrderMaxOrderByAggregateInput = {
@@ -506,11 +486,10 @@ export type OrderMaxOrderByAggregateInput = {
   side?: Prisma.SortOrder
   qty?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  margin?: Prisma.SortOrder
+  leverage?: Prisma.SortOrder
   orderType?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
 }
 
 export type OrderMinOrderByAggregateInput = {
@@ -521,17 +500,16 @@ export type OrderMinOrderByAggregateInput = {
   side?: Prisma.SortOrder
   qty?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  margin?: Prisma.SortOrder
+  leverage?: Prisma.SortOrder
   orderType?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
 }
 
 export type OrderSumOrderByAggregateInput = {
   qty?: Prisma.SortOrder
   price?: Prisma.SortOrder
-  margin?: Prisma.SortOrder
+  leverage?: Prisma.SortOrder
 }
 
 export type OrderScalarRelationFilter = {
@@ -585,7 +563,7 @@ export type EnumOrderSideFieldUpdateOperationsInput = {
   set?: $Enums.OrderSide
 }
 
-export type IntFieldUpdateOperationsInput = {
+export type FloatFieldUpdateOperationsInput = {
   set?: number
   increment?: number
   decrement?: number
@@ -622,11 +600,10 @@ export type OrderCreateWithoutUserInput = {
   side: $Enums.OrderSide
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: $Enums.OrderType
   status?: $Enums.OrderStatus
   createdAt?: Date | string
-  updatedAt?: Date | string
   fills?: Prisma.FillCreateNestedManyWithoutOrderInput
 }
 
@@ -637,11 +614,10 @@ export type OrderUncheckedCreateWithoutUserInput = {
   side: $Enums.OrderSide
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: $Enums.OrderType
   status?: $Enums.OrderStatus
   createdAt?: Date | string
-  updatedAt?: Date | string
   fills?: Prisma.FillUncheckedCreateNestedManyWithoutOrderInput
 }
 
@@ -680,13 +656,12 @@ export type OrderScalarWhereInput = {
   userId?: Prisma.StringFilter<"Order"> | string
   market?: Prisma.StringFilter<"Order"> | string
   side?: Prisma.EnumOrderSideFilter<"Order"> | $Enums.OrderSide
-  qty?: Prisma.IntFilter<"Order"> | number
-  price?: Prisma.IntFilter<"Order"> | number
-  margin?: Prisma.IntFilter<"Order"> | number
+  qty?: Prisma.FloatFilter<"Order"> | number
+  price?: Prisma.FloatFilter<"Order"> | number
+  leverage?: Prisma.FloatFilter<"Order"> | number
   orderType?: Prisma.EnumOrderTypeFilter<"Order"> | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
 }
 
 export type OrderCreateWithoutFillsInput = {
@@ -696,11 +671,10 @@ export type OrderCreateWithoutFillsInput = {
   side: $Enums.OrderSide
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: $Enums.OrderType
   status?: $Enums.OrderStatus
   createdAt?: Date | string
-  updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutOrdersInput
 }
 
@@ -712,11 +686,10 @@ export type OrderUncheckedCreateWithoutFillsInput = {
   side: $Enums.OrderSide
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: $Enums.OrderType
   status?: $Enums.OrderStatus
   createdAt?: Date | string
-  updatedAt?: Date | string
 }
 
 export type OrderCreateOrConnectWithoutFillsInput = {
@@ -740,13 +713,12 @@ export type OrderUpdateWithoutFillsInput = {
   correlationId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
   side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
-  margin?: Prisma.IntFieldUpdateOperationsInput | number
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
+  leverage?: Prisma.FloatFieldUpdateOperationsInput | number
   orderType?: Prisma.EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutOrdersNestedInput
 }
 
@@ -756,13 +728,12 @@ export type OrderUncheckedUpdateWithoutFillsInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
   side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
-  margin?: Prisma.IntFieldUpdateOperationsInput | number
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
+  leverage?: Prisma.FloatFieldUpdateOperationsInput | number
   orderType?: Prisma.EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type OrderCreateManyUserInput = {
@@ -772,11 +743,10 @@ export type OrderCreateManyUserInput = {
   side: $Enums.OrderSide
   qty: number
   price: number
-  margin: number
+  leverage: number
   orderType: $Enums.OrderType
   status?: $Enums.OrderStatus
   createdAt?: Date | string
-  updatedAt?: Date | string
 }
 
 export type OrderUpdateWithoutUserInput = {
@@ -784,13 +754,12 @@ export type OrderUpdateWithoutUserInput = {
   correlationId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
   side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
-  margin?: Prisma.IntFieldUpdateOperationsInput | number
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
+  leverage?: Prisma.FloatFieldUpdateOperationsInput | number
   orderType?: Prisma.EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fills?: Prisma.FillUpdateManyWithoutOrderNestedInput
 }
 
@@ -799,13 +768,12 @@ export type OrderUncheckedUpdateWithoutUserInput = {
   correlationId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
   side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
-  margin?: Prisma.IntFieldUpdateOperationsInput | number
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
+  leverage?: Prisma.FloatFieldUpdateOperationsInput | number
   orderType?: Prisma.EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fills?: Prisma.FillUncheckedUpdateManyWithoutOrderNestedInput
 }
 
@@ -814,13 +782,12 @@ export type OrderUncheckedUpdateManyWithoutUserInput = {
   correlationId?: Prisma.StringFieldUpdateOperationsInput | string
   market?: Prisma.StringFieldUpdateOperationsInput | string
   side?: Prisma.EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
-  qty?: Prisma.IntFieldUpdateOperationsInput | number
-  price?: Prisma.IntFieldUpdateOperationsInput | number
-  margin?: Prisma.IntFieldUpdateOperationsInput | number
+  qty?: Prisma.FloatFieldUpdateOperationsInput | number
+  price?: Prisma.FloatFieldUpdateOperationsInput | number
+  leverage?: Prisma.FloatFieldUpdateOperationsInput | number
   orderType?: Prisma.EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -862,11 +829,10 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   side?: boolean
   qty?: boolean
   price?: boolean
-  margin?: boolean
+  leverage?: boolean
   orderType?: boolean
   status?: boolean
   createdAt?: boolean
-  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   fills?: boolean | Prisma.Order$fillsArgs<ExtArgs>
   _count?: boolean | Prisma.OrderCountOutputTypeDefaultArgs<ExtArgs>
@@ -880,11 +846,10 @@ export type OrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   side?: boolean
   qty?: boolean
   price?: boolean
-  margin?: boolean
+  leverage?: boolean
   orderType?: boolean
   status?: boolean
   createdAt?: boolean
-  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
@@ -896,11 +861,10 @@ export type OrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   side?: boolean
   qty?: boolean
   price?: boolean
-  margin?: boolean
+  leverage?: boolean
   orderType?: boolean
   status?: boolean
   createdAt?: boolean
-  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["order"]>
 
@@ -912,14 +876,13 @@ export type OrderSelectScalar = {
   side?: boolean
   qty?: boolean
   price?: boolean
-  margin?: boolean
+  leverage?: boolean
   orderType?: boolean
   status?: boolean
   createdAt?: boolean
-  updatedAt?: boolean
 }
 
-export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"orderId" | "correlationId" | "userId" | "market" | "side" | "qty" | "price" | "margin" | "orderType" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
+export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"orderId" | "correlationId" | "userId" | "market" | "side" | "qty" | "price" | "leverage" | "orderType" | "status" | "createdAt", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   fills?: boolean | Prisma.Order$fillsArgs<ExtArgs>
@@ -946,11 +909,10 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     side: $Enums.OrderSide
     qty: number
     price: number
-    margin: number
+    leverage: number
     orderType: $Enums.OrderType
     status: $Enums.OrderStatus
     createdAt: Date
-    updatedAt: Date
   }, ExtArgs["result"]["order"]>
   composites: {}
 }
@@ -1381,13 +1343,12 @@ export interface OrderFieldRefs {
   readonly userId: Prisma.FieldRef<"Order", 'String'>
   readonly market: Prisma.FieldRef<"Order", 'String'>
   readonly side: Prisma.FieldRef<"Order", 'OrderSide'>
-  readonly qty: Prisma.FieldRef<"Order", 'Int'>
-  readonly price: Prisma.FieldRef<"Order", 'Int'>
-  readonly margin: Prisma.FieldRef<"Order", 'Int'>
+  readonly qty: Prisma.FieldRef<"Order", 'Float'>
+  readonly price: Prisma.FieldRef<"Order", 'Float'>
+  readonly leverage: Prisma.FieldRef<"Order", 'Float'>
   readonly orderType: Prisma.FieldRef<"Order", 'OrderType'>
   readonly status: Prisma.FieldRef<"Order", 'OrderStatus'>
   readonly createdAt: Prisma.FieldRef<"Order", 'DateTime'>
-  readonly updatedAt: Prisma.FieldRef<"Order", 'DateTime'>
 }
     
 

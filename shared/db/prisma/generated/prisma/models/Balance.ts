@@ -209,8 +209,8 @@ export type BalanceWhereInput = {
   OR?: Prisma.BalanceWhereInput[]
   NOT?: Prisma.BalanceWhereInput | Prisma.BalanceWhereInput[]
   userId?: Prisma.StringFilter<"Balance"> | string
-  available?: Prisma.IntFilter<"Balance"> | number
-  locked?: Prisma.IntFilter<"Balance"> | number
+  available?: Prisma.FloatFilter<"Balance"> | number
+  locked?: Prisma.FloatFilter<"Balance"> | number
   updatedAt?: Prisma.DateTimeFilter<"Balance"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
@@ -228,8 +228,8 @@ export type BalanceWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.BalanceWhereInput | Prisma.BalanceWhereInput[]
   OR?: Prisma.BalanceWhereInput[]
   NOT?: Prisma.BalanceWhereInput | Prisma.BalanceWhereInput[]
-  available?: Prisma.IntFilter<"Balance"> | number
-  locked?: Prisma.IntFilter<"Balance"> | number
+  available?: Prisma.FloatFilter<"Balance"> | number
+  locked?: Prisma.FloatFilter<"Balance"> | number
   updatedAt?: Prisma.DateTimeFilter<"Balance"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "userId">
@@ -251,8 +251,8 @@ export type BalanceScalarWhereWithAggregatesInput = {
   OR?: Prisma.BalanceScalarWhereWithAggregatesInput[]
   NOT?: Prisma.BalanceScalarWhereWithAggregatesInput | Prisma.BalanceScalarWhereWithAggregatesInput[]
   userId?: Prisma.StringWithAggregatesFilter<"Balance"> | string
-  available?: Prisma.IntWithAggregatesFilter<"Balance"> | number
-  locked?: Prisma.IntWithAggregatesFilter<"Balance"> | number
+  available?: Prisma.FloatWithAggregatesFilter<"Balance"> | number
+  locked?: Prisma.FloatWithAggregatesFilter<"Balance"> | number
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Balance"> | Date | string
 }
 
@@ -271,16 +271,16 @@ export type BalanceUncheckedCreateInput = {
 }
 
 export type BalanceUpdateInput = {
-  available?: Prisma.IntFieldUpdateOperationsInput | number
-  locked?: Prisma.IntFieldUpdateOperationsInput | number
+  available?: Prisma.FloatFieldUpdateOperationsInput | number
+  locked?: Prisma.FloatFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutBalanceNestedInput
 }
 
 export type BalanceUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  available?: Prisma.IntFieldUpdateOperationsInput | number
-  locked?: Prisma.IntFieldUpdateOperationsInput | number
+  available?: Prisma.FloatFieldUpdateOperationsInput | number
+  locked?: Prisma.FloatFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -292,15 +292,15 @@ export type BalanceCreateManyInput = {
 }
 
 export type BalanceUpdateManyMutationInput = {
-  available?: Prisma.IntFieldUpdateOperationsInput | number
-  locked?: Prisma.IntFieldUpdateOperationsInput | number
+  available?: Prisma.FloatFieldUpdateOperationsInput | number
+  locked?: Prisma.FloatFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type BalanceUncheckedUpdateManyInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  available?: Prisma.IntFieldUpdateOperationsInput | number
-  locked?: Prisma.IntFieldUpdateOperationsInput | number
+  available?: Prisma.FloatFieldUpdateOperationsInput | number
+  locked?: Prisma.FloatFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -401,14 +401,14 @@ export type BalanceUpdateToOneWithWhereWithoutUserInput = {
 }
 
 export type BalanceUpdateWithoutUserInput = {
-  available?: Prisma.IntFieldUpdateOperationsInput | number
-  locked?: Prisma.IntFieldUpdateOperationsInput | number
+  available?: Prisma.FloatFieldUpdateOperationsInput | number
+  locked?: Prisma.FloatFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type BalanceUncheckedUpdateWithoutUserInput = {
-  available?: Prisma.IntFieldUpdateOperationsInput | number
-  locked?: Prisma.IntFieldUpdateOperationsInput | number
+  available?: Prisma.FloatFieldUpdateOperationsInput | number
+  locked?: Prisma.FloatFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -891,8 +891,8 @@ export interface Prisma__BalanceClient<T, Null = never, ExtArgs extends runtime.
  */
 export interface BalanceFieldRefs {
   readonly userId: Prisma.FieldRef<"Balance", 'String'>
-  readonly available: Prisma.FieldRef<"Balance", 'Int'>
-  readonly locked: Prisma.FieldRef<"Balance", 'Int'>
+  readonly available: Prisma.FieldRef<"Balance", 'Float'>
+  readonly locked: Prisma.FieldRef<"Balance", 'Float'>
   readonly updatedAt: Prisma.FieldRef<"Balance", 'DateTime'>
 }
     
