@@ -1,0 +1,17 @@
+{
+  "name": "scripts",
+  "module": "seed.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "redis": "^5.12.1",
+    "dotenv": "^17.4.2",
+    "@repo/db": "../shared/db"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

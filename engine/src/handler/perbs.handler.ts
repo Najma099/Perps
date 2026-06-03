@@ -18,10 +18,60 @@ import {
 
 import { emitEvent } from "../utils/events";
 
+export interface ModifiedLevel {
+  side: "bids" | "asks";
+  price: number;
+}
+
+let globalUpdateId = 0;
+
+function nextUpdateId(): number {
+  return ++globalUpdateId;
+}
+
+export async function emitOrderbookUpdate(
+  market: string,
+  book: Orderbook,
+  modifiedLevels: ModifiedLevel[],
+) {
+  const changedBids: [number, number][] = [];
+  const changedAsks: [number, number][] = [];
+  const seen = new Set<string>();
+
+  for (const mod of modifiedLevels) {
+    const key = `${mod.side}:${mod.price}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const level =
+      mod.side === "bids"
+        ? book.bids.get(mod.price)
+        : book.asks.get(mod.price);
+    const qty = level ? level.reduce((sum, o) => sum + o.qty, 0) : 0;
+
+    if (mod.side === "bids") {
+      changedBids.push([mod.price, qty]);
+    } else {
+      changedAsks.push([mod.price, qty]);
+    }
+  }
+
+  if (changedBids.length === 0 && changedAsks.length === 0) return;
+
+  const id = nextUpdateId();
+  await emitEvent("ORDERBOOK_UPDATE", {
+    market,
+    firstUpdateId: id,
+    lastUpdateId: id,
+    bids: changedBids,
+    asks: changedAsks,
+  });
+}
+
 const seedUserIfNeeded = (userId: string) => {
   if (!BALANCES.has(userId)) {
     BALANCES.set(userId, {
-      available: 10000,
+      available: 100000,
       locked: 0,
     });
   }
@@ -139,17 +189,18 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
   }
 
   const book = ORDERBOOKS.get(market)!;
-  const { filledQty, fills, takerPositions, makerPositions } = await matchOrder(
-    book,
-    positionType,
-    orderType,
-    price,
-    qty,
-    leverage,
-    userId,
-    market,
-    order.orderId,
-  );
+  const { filledQty, fills, takerPositions, makerPositions, modifiedLevels } =
+    await matchOrder(
+      book,
+      positionType,
+      orderType,
+      price,
+      qty,
+      leverage,
+      userId,
+      market,
+      order.orderId,
+    );
 
   const filledMargin = (filledQty / qty) * margin;
   userBalance.locked -= filledMargin;
@@ -231,12 +282,16 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
     const sideBook = side === "buy" ? book.bids : book.asks;
     if (!sideBook.has(price)) sideBook.set(price, []);
     sideBook.get(price)!.push(restingOrder);
+
+    const limitSide = side === "buy" ? "bids" : "asks";
+    modifiedLevels.push({ side: limitSide, price });
   }
 
   order.status =
     filledQty === 0 ? "open" : filledQty < qty ? "partially_filled" : "filled";
 
-  
+  await emitOrderbookUpdate(market, book, modifiedLevels);
+
   await emitEvent("ORDER_UPDATED", {
     orderId: order.orderId,
     userId,
@@ -263,6 +318,7 @@ export const cancelPosition = async (payload: Record<string, unknown>) => {
   const book = ORDERBOOKS.get(order.market);
   if (!book) throw new Error("Orderbook not found");
 
+  const sideName = order.side === "buy" ? "bids" : "asks";
   const sideBook = order.side === "buy" ? book.bids : book.asks;
   const level = sideBook.get(order.price!);
   const restingOrder = level?.find((o) => o.orderId === orderId);
@@ -277,6 +333,10 @@ export const cancelPosition = async (payload: Record<string, unknown>) => {
       sideBook.set(order.price!, filtered);
     }
   }
+
+  await emitOrderbookUpdate(order.market, book, [
+    { side: sideName, price: order.price! },
+  ]);
 
   const userBalance = BALANCES.get(userId);
   if (userBalance) {
@@ -301,6 +361,37 @@ export const cancelPosition = async (payload: Record<string, unknown>) => {
   return { orderId, status: "cancelled" };
 };
 
+export const getOrderbookSnapshot = async (
+  payload: Record<string, unknown>,
+) => {
+  const market = payload.market as string;
+  const book = ORDERBOOKS.get(market);
+  if (!book) {
+    // Return an empty orderbook for unknown markets
+    return { market, lastUpdateId: globalUpdateId, bids: [], asks: [] };
+  }
+
+  const bids: [number, number][] = [];
+  const asks: [number, number][] = [];
+
+  for (const [price, orders] of book.bids.entries()) {
+    const qty = orders.reduce((sum, o) => sum + o.qty, 0);
+    bids.push([price, qty]);
+  }
+
+  for (const [price, orders] of book.asks.entries()) {
+    const qty = orders.reduce((sum, o) => sum + o.qty, 0);
+    asks.push([price, qty]);
+  }
+
+  return {
+    market,
+    lastUpdateId: globalUpdateId,
+    bids: bids.reverse(),
+    asks,
+  };
+};
+
 export const matchOrder = async (
   book: Orderbook,
   positionType: PositionType,
@@ -316,6 +407,7 @@ export const matchOrder = async (
   fills: Fill[];
   takerPositions: Position[];
   makerPositions: Position[];
+  modifiedLevels: ModifiedLevel[];
 }> => {
   const MM = 0.05;
   const opposite = positionType === "long" ? book.asks : book.bids;
@@ -324,6 +416,7 @@ export const matchOrder = async (
   const fills: Fill[] = [];
   const takerPos: Position[] = [];
   const makerPos: Position[] = [];
+  const modifiedLevels: ModifiedLevel[] = [];
 
   const takerMargin = (qty * price) / leverage;
 
@@ -339,6 +432,9 @@ export const matchOrder = async (
       if (positionType === "long" && bestPrice > price) break;
       if (positionType === "short" && bestPrice < price) break;
     }
+
+    const modSide = positionType === "long" ? ("asks" as const) : ("bids" as const);
+    modifiedLevels.push({ side: modSide, price: bestPrice });
 
     const level = opposite.get(bestPrice)!;
     const resting = level[0]!;
@@ -434,5 +530,6 @@ export const matchOrder = async (
     fills,
     takerPositions: takerPos,
     makerPositions: makerPos,
+    modifiedLevels,
   };
 };

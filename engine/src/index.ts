@@ -10,6 +10,7 @@ import {
   getClosePosition,
   openPosition,
   cancelPosition,
+  getOrderbookSnapshot,
 } from "./handler/perbs.handler.js";
 import { parseEngineRequest } from "./utils/redisMessagePaser.js";
 import type { RedisStream } from "./types/redisMessage.js";
@@ -41,7 +42,7 @@ await Promise.all([brokerClient.connect(), responseClient.connect()]);
 await hydrateEngine();
 
 try {
-  await brokerClient.xGroupCreate(env.incomingQueue, "engine", "$", {
+  await brokerClient.xGroupCreate(env.incomingQueue, "engine", "0", {
     MKSTREAM: true,
   });
   console.log("Consumer group created");
@@ -78,6 +79,8 @@ async function handleEngineRequest(message: EngineRequest): Promise<unknown> {
       return openPosition(message.payload, message.correlationId);
     case "cancel_position":
       return cancelPosition(message.payload);
+    case "get_orderbook_snapshot":
+      return getOrderbookSnapshot(message.payload);
     default:
       throw new Error(`Not implemented: ${message.type}`);
   }

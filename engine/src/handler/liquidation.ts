@@ -6,7 +6,7 @@ import {
   type Position,
 } from "../store/perp-store";
 import { emitEvent } from "../utils/events";
-import { matchOrder } from "./perbs.handler";
+import { matchOrder, emitOrderbookUpdate } from "./perbs.handler";
 
 export const liquidatePosition = async (
   position: Position,
@@ -19,7 +19,7 @@ export const liquidatePosition = async (
   const closingSide: PositionType =
     position.type === "long" ? "short" : "long";
 
-  const { filledQty, fills } = await matchOrder(
+  const { filledQty, fills, modifiedLevels } = await matchOrder(
     book,
     closingSide,
     "market",
@@ -29,6 +29,8 @@ export const liquidatePosition = async (
     position.userId,
     market,
   );
+
+  await emitOrderbookUpdate(market, book, modifiedLevels);
 
   if (!FILLS.has(market)) FILLS.set(market, []);
   FILLS.get(market)!.push(...fills);
