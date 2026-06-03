@@ -367,7 +367,6 @@ export const getOrderbookSnapshot = async (
   const market = payload.market as string;
   const book = ORDERBOOKS.get(market);
   if (!book) {
-    // Return an empty orderbook for unknown markets
     return { market, lastUpdateId: globalUpdateId, bids: [], asks: [] };
   }
 

@@ -3,9 +3,9 @@ import { createClient } from "redis";
 import { WebSocketServer, type WebSocket } from "ws";
 import { env } from "./config";
 
-// ── types ──────────────────────────────────────────────
+
 interface DepthLevel {
-  bids: Map<number, number>; // price → qty
+  bids: Map<number, number>; 
   asks: Map<number, number>;
   lastUpdateId: number;
 }
@@ -17,7 +17,7 @@ interface Subscriptions {
 const orderbooks = new Map<string, DepthLevel>();
 const clients = new Map<WebSocket, Subscriptions>();
 
-// ── Redis clients ──────────────────────────────────────
+
 const eventClient = createClient({ url: env.redisUrl }).on(
   "error",
   (err) => console.error("event redis error", err),
@@ -39,7 +39,6 @@ await Promise.all([
   responseClient.connect(),
 ]);
 
-// ── request initial snapshot from engine ───────────────
 async function requestSnapshot(market: string) {
   const correlationId = crypto.randomUUID();
   await commandClient.xAdd(env.incomingQueue, "*", {
@@ -49,16 +48,15 @@ async function requestSnapshot(market: string) {
     payload: JSON.stringify({ market }),
   });
 
-  // read from response queue until we find our correlationId
   const timeout = 10000;
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    const raw = await responseClient.xReadGroup(
+    const raw = (await responseClient.xReadGroup(
       "ws-service",
       "ws-worker-1",
       [{ key: env.responseQueue, id: ">" }],
       { COUNT: 10, BLOCK: 2000 },
-    );
+    )) as any;
     if (!raw) continue;
 
     for (const stream of raw) {
@@ -78,7 +76,6 @@ async function requestSnapshot(market: string) {
   throw new Error("snapshot request timed out");
 }
 
-// ── boot: fetch & build orderbooks for known markets ───
 async function bootstrap() {
   try {
     await responseClient.xGroupCreate(env.responseQueue, "ws-service", "$", {
@@ -88,7 +85,6 @@ async function bootstrap() {
     if (!err.message.includes("BUSYGROUP")) throw err;
   }
 
-  // Fetch snapshot for all known markets
   const knownMarkets = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
   for (const market of knownMarkets) {
     try {
@@ -111,7 +107,6 @@ async function bootstrap() {
       console.log(`Bootstrapped orderbook for ${market}`);
     } catch (err) {
       console.warn(`Failed to bootstrap ${market}:`, err);
-      // still create empty book
       orderbooks.set(market, { bids: new Map(), asks: new Map(), lastUpdateId: 0 });
     }
   }
@@ -120,7 +115,6 @@ async function bootstrap() {
 
 await bootstrap();
 
-// ── subscribe to stream:events ─────────────────────────
 try {
   await eventClient.xGroupCreate("stream:events", "ws-service", "$", {
     MKSTREAM: true,
@@ -129,7 +123,6 @@ try {
   if (!err.message.includes("BUSYGROUP")) throw err;
 }
 
-// ── WebSocket server ───────────────────────────────────
 const wss = new WebSocketServer({ port: env.wsPort });
 console.log(`WebSocket server on port ${env.wsPort}`);
 
@@ -201,7 +194,6 @@ wss.on("connection", (ws) => {
   });
 });
 
-// ── broadcast helpers ─────────────────────────────────
 function broadcastToMarket(market: string, data: object) {
   const payload = JSON.stringify(data);
   for (const [ws, subs] of clients) {
@@ -223,7 +215,6 @@ function broadcastTrade(fill: any) {
   broadcastToMarket(fill.market, data);
 }
 
-// ── event processing ──────────────────────────────────
 async function processEvent(entry: {
   id: string;
   message: Record<string, string>;
@@ -247,7 +238,6 @@ async function processEvent(entry: {
         orderbooks.set(market, book);
       }
 
-      // qty = 0 → remove the level (Binance convention)
       for (const [price, qty] of bids ?? []) {
         if (qty === 0) {
           book.bids.delete(price);
@@ -281,7 +271,6 @@ async function processEvent(entry: {
   }
 }
 
-// ── event loop ─────────────────────────────────────────
 console.log("Listening for events on stream:events");
 for (;;) {
   const raw = (await eventClient.xReadGroup(

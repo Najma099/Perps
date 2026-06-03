@@ -11,14 +11,12 @@ import {
 
 export async function hydrateEngine() {
   try {
-    // 1. balances
     const balances = await prisma.balance.findMany();
     for (const b of balances) {
       BALANCES.set(b.userId, { available: b.available, locked: b.locked });
     }
     console.log(`✅ Hydrated ${balances.length} balances`);
 
-    // 2. open orders → rebuild orderbooks BTree
     const openOrders = await prisma.order.findMany({
       where: { status: { in: ["open", "partially_filled"] } },
     });
@@ -67,7 +65,6 @@ export async function hydrateEngine() {
     }
     console.log(`✅ Hydrated ${openOrders.length} open orders`);
 
-    // 3. open positions
     const openPositions = await prisma.position.findMany({
       where: { positionStatus: "open" },
     });

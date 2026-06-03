@@ -1,6 +1,3 @@
-// Quick seed — sends orders directly to engine via Redis.
-// No DB needed. Engine creates users in-memory via seedUserIfNeeded.
-
 import { createClient } from "redis";
 
 const MARKET = "BTCUSDT";
@@ -17,7 +14,6 @@ const count = { bids: 12, asks: 12 };
 const step = 80;
 const DEFAULT_BALANCE = 100000; // must match engine's seedUserIfNeeded
 
-  // Bids below base price
   for (let i = 0; i < count.bids; i++) {
     const price = BASE_PRICE - (count.bids - i) * step;
     const user = USERS[i % USERS.length];
@@ -39,7 +35,6 @@ const DEFAULT_BALANCE = 100000; // must match engine's seedUserIfNeeded
     console.log(`  Bid  ${price} x ${(0.5 + Math.random() * 0.5).toFixed(2)} ← ${user}`);
   }
 
-  // Asks above base price
   for (let i = 0; i < count.asks; i++) {
     const price = BASE_PRICE + (i + 1) * step;
     const user = USERS[i % USERS.length];
