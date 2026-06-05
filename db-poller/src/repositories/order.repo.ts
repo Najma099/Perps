@@ -6,6 +6,15 @@ import type {
   OrderStatus,
 } from "@repo/db/prisma/generated/prisma/enums";
 
+async function ensureUser(userId: string) {
+  const exists = await prisma.user.findUnique({ where: { userId }, select: { userId: true } });
+  if (!exists) {
+    await prisma.user.create({
+      data: { userId, username: `usr-${userId}`, password: "" },
+    });
+  }
+}
+
 export async function createOrder(data: {
   orderId: string;
   correlationId: string;
@@ -17,14 +26,22 @@ export async function createOrder(data: {
   leverage: number;
   orderType: OrderType;
 }) {
+  await ensureUser(data.userId);
   return prisma.order.create({ data });
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
-  return prisma.order.update({
-    where: { orderId },
-    data: { status },
-  });
+  try {
+    return await prisma.order.update({
+      where: { orderId },
+      data: { status },
+    });
+  } catch (err: any) {
+    if (err?.code === "P2025") {
+      return;
+    }
+    throw err;
+  }
 }
 
 export async function getOrdersByUserId(userId: string) {

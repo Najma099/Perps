@@ -1,7 +1,10 @@
 import { prisma } from "@repo/db";
 import BTree from "sorted-btree";
 import {
-  BALANCES, ORDERS, POSITIONS, ORDERBOOKS,
+  BALANCES,
+  ORDERS,
+  POSITIONS,
+  ORDERBOOKS,
   type RestingOrder,
   type OrderSide,
   type OrderType,
@@ -15,7 +18,7 @@ export async function hydrateEngine() {
     for (const b of balances) {
       BALANCES.set(b.userId, { available: b.available, locked: b.locked });
     }
-    console.log(`✅ Hydrated ${balances.length} balances`);
+    console.log(`Hydrated ${balances.length} balances`);
 
     const openOrders = await prisma.order.findMany({
       where: { status: { in: ["open", "partially_filled"] } },
@@ -24,15 +27,15 @@ export async function hydrateEngine() {
     for (const order of openOrders) {
       if (!ORDERS.has(order.userId)) ORDERS.set(order.userId, []);
       ORDERS.get(order.userId)!.push({
-        orderId:   order.orderId,
-        userId:    order.userId,
-        market:    order.market,
-        side:      order.side as OrderSide,
-        qty:       order.qty,
-        leverage:  order.leverage,
+        orderId: order.orderId,
+        userId: order.userId,
+        market: order.market,
+        side: order.side as OrderSide,
+        qty: order.qty,
+        leverage: order.leverage,
         orderType: order.orderType as OrderType,
-        price:     order.price,
-        status:    order.status as OrderStatus,
+        price: order.price,
+        status: order.status as OrderStatus,
         createdAt: order.createdAt.getTime(),
       });
 
@@ -50,12 +53,12 @@ export async function hydrateEngine() {
       const margin = (order.qty * order.price) / order.leverage;
 
       const restingOrder: RestingOrder = {
-        orderId:   order.orderId,
-        userId:    order.userId,
-        side:      order.side as OrderSide,
-        qty:       order.qty,
-        market:    order.market,
-        price:     order.price,
+        orderId: order.orderId,
+        userId: order.userId,
+        side: order.side as OrderSide,
+        qty: order.qty,
+        market: order.market,
+        price: order.price,
         margin,
         createdAt: order.createdAt.getTime(),
       };
@@ -63,7 +66,7 @@ export async function hydrateEngine() {
       if (!sideBook.has(order.price)) sideBook.set(order.price, []);
       sideBook.get(order.price)!.push(restingOrder);
     }
-    console.log(`✅ Hydrated ${openOrders.length} open orders`);
+    console.log(`Hydrated ${openOrders.length} open orders`);
 
     const openPositions = await prisma.position.findMany({
       where: { positionStatus: "open" },
@@ -72,23 +75,25 @@ export async function hydrateEngine() {
     for (const p of openPositions) {
       if (!POSITIONS.has(p.userId)) POSITIONS.set(p.userId, []);
       POSITIONS.get(p.userId)!.push({
-        positionId:       p.positionId,
-        userId:           p.userId,
-        market:           p.market,
-        type:             p.type as PositionType,
-        qty:              p.qty,
-        margin:           p.margin,
-        leverage:         p.leverage,
-        unrealizedPnl:    0,
-        realizedPnl:      p.realizedPnl,
-        averagePrice:     p.averagePrice,
+        positionId: p.positionId,
+        userId: p.userId,
+        market: p.market,
+        type: p.type as PositionType,
+        qty: p.qty,
+        margin: p.margin,
+        leverage: p.leverage,
+        unrealizedPnl: 0,
+        realizedPnl: p.realizedPnl,
+        averagePrice: p.averagePrice,
         liquidationPrice: p.liquidationPrice,
-        positionStatus:   "open",
-        createdAt:        p.createdAt.getTime(),
+        positionStatus: "open",
+        createdAt: p.createdAt.getTime(),
       });
     }
-    console.log(`✅ Hydrated ${openPositions.length} open positions`);
+    console.log(`Hydrated ${openPositions.length} open positions`);
   } catch (err) {
-    console.warn("⚠️  DB unavailable — starting with empty state (hydrate skipped)");
+    console.warn(
+      "DB unavailable - starting with empty state (hydrate skipped)",
+    );
   }
 }

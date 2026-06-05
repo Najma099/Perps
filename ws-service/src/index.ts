@@ -211,6 +211,7 @@ function broadcastTrade(fill: any) {
     qty: fill.qty,
     side: fill.side,
     tradeId: fill.fillId,
+    createdAt: fill.createdAt ?? Date.now(),
   };
   broadcastToMarket(fill.market, data);
 }

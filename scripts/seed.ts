@@ -19,7 +19,7 @@ const USERS = [
 ];
 
 async function main() {
-  console.log("🌱 Seeding test data...\n");
+  console.log("Seeding test data...\n");
 
   // 1. Create users in DB
   console.log("Creating users...");
@@ -52,7 +52,6 @@ async function main() {
     console.log(`  Balance set for ${u.username}: 100000`);
   }
 
-  // 3. Send limit orders to engine via Redis
   console.log("\nSending limit orders to engine...");
   const redis = createClient({ url: process.env.REDIS_URL || "redis://localhost:6379" });
   await redis.connect();
@@ -60,7 +59,7 @@ async function main() {
   const priceSpread = 2000;
   const priceStep = 100;
 
-  // Bids — below base price
+  // Bids below base price
   for (let i = 0; i < BID_COUNT; i++) {
     const price = BASE_PRICE - (priceSpread / 2) + i * priceStep;
     const user = createdUsers[i % createdUsers.length];
@@ -80,10 +79,10 @@ async function main() {
         price,
       }),
     });
-    console.log(`  Bid #${i + 1}: ${user.username} — ${price} x ${QTY_PER_ORDER}`);
+    console.log(`  Bid #${i + 1}: ${user.username} ${price} x ${QTY_PER_ORDER}`);
   }
 
-  // Asks — above base price
+  // Asks above base price
   for (let i = 0; i < ASK_COUNT; i++) {
     const price = BASE_PRICE + (priceSpread / 2) + i * priceStep;
     const user = createdUsers[i % createdUsers.length];
@@ -103,12 +102,12 @@ async function main() {
         price,
       }),
     });
-    console.log(`  Ask #${i + 1}: ${user.username} — ${price} x ${QTY_PER_ORDER}`);
+    console.log(`  Ask #${i + 1}: ${user.username} ${price} x ${QTY_PER_ORDER}`);
   }
 
   await redis.disconnect();
 
-  console.log(`\n✅ Done! Sent ${BID_COUNT} bids + ${ASK_COUNT} asks to ${MARKET}`);
+  console.log(`\nDone! Sent ${BID_COUNT} bids + ${ASK_COUNT} asks to ${MARKET}`);
   console.log("   The engine will process them and the DB poller will persist.");
   console.log("   Run `bun run dev` in the engine & db-poller first!\n");
 

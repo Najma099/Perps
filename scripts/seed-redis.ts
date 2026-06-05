@@ -5,14 +5,14 @@ const BASE_PRICE = 45000;
 const USERS = ["user-alice", "user-bob", "user-carol", "user-dave", "user-eve"];
 
 async function main() {
-  console.log("🌱 Seeding orderbook via Redis (no DB required)...\n");
+  console.log("Seeding orderbook via Redis (no DB required)...\n");
 
   const redis = createClient({ url: process.env.REDIS_URL || "redis://localhost:6379" });
   await redis.connect();
 
 const count = { bids: 12, asks: 12 };
 const step = 80;
-const DEFAULT_BALANCE = 100000; // must match engine's seedUserIfNeeded
+const DEFAULT_BALANCE = 100000; 
 
   for (let i = 0; i < count.bids; i++) {
     const price = BASE_PRICE - (count.bids - i) * step;
@@ -32,7 +32,7 @@ const DEFAULT_BALANCE = 100000; // must match engine's seedUserIfNeeded
         price,
       }),
     });
-    console.log(`  Bid  ${price} x ${(0.5 + Math.random() * 0.5).toFixed(2)} ← ${user}`);
+    console.log(`  Bid  ${price} x ${(0.5 + Math.random() * 0.5).toFixed(2)} < ${user}`);
   }
 
   for (let i = 0; i < count.asks; i++) {
@@ -53,10 +53,10 @@ const DEFAULT_BALANCE = 100000; // must match engine's seedUserIfNeeded
         price,
       }),
     });
-    console.log(`  Ask  ${price} x ${(0.5 + Math.random() * 0.5).toFixed(2)} → ${user}`);
+    console.log(`  Ask  ${price} x ${(0.5 + Math.random() * 0.5).toFixed(2)} > ${user}`);
   }
 
-  console.log(`\n✅ Sent ${count.bids + count.asks} limit orders to ${MARKET}`);
+  console.log(`\nSent ${count.bids + count.asks} limit orders to ${MARKET}`);
   console.log("   Engine will process them and ws-service will broadcast depthUpdate.\n");
 
   await redis.disconnect();

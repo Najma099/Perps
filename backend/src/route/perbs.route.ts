@@ -123,7 +123,7 @@ router.get(
     const response = await sendToEngine("get_open_positions", parsed.data);
     res
       .status(response.ok ? 200 : 400)
-      .json(response.ok ? response.data : { error: response.error });
+      .json(response.ok ? { positions: response.data } : { error: response.error });
   }),
 );
 
@@ -144,11 +144,10 @@ router.get(
     const response = await sendToEngine("get_closed_positions", parsed.data);
     res
       .status(response.ok ? 200 : 400)
-      .json(response.ok ? response.data : { error: response.error });
+      .json(response.ok ? { positions: response.data } : { error: response.error });
   }),
 );
 
-//db
 router.get(
   "/orders/open/:market",
   requireAuth,
@@ -171,7 +170,6 @@ router.get(
   }),
 );
 
-//db
 router.get(
   "/orders/:market",
   requireAuth,
@@ -194,7 +192,6 @@ router.get(
   }),
 );
 
-//db
 router.get(
   "/fills",
   requireAuth,
