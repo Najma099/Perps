@@ -1,6 +1,9 @@
-.git
 node_modules
-dist
-*.env
-.env
-.tmp
+**/node_modules
+**/.git
+**/*.md
+**/dist
+scripts
+public
+.env*
+**/*.log

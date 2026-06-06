@@ -7,10 +7,21 @@
     "dev:ws": "bun run --cwd ws-service dev",
     "dev:poller": "bun run --cwd db-poller dev",
     "dev:frontend": "bun run --cwd frontend dev",
-    "build:frontend": "bun run --cwd frontend build",
     "seed": "bun run --cwd scripts seed.ts",
     "seed:redis": "bun run --cwd scripts seed-redis.ts",
     "feed": "bun run --cwd scripts market-feed.ts",
-    "dev:worker": "bun run --cwd scripts worker.ts"
+    "generate": "cd shared/db && bunx prisma generate",
+    "build:db": "bun run --cwd shared/db build",
+    "build:backend": "bun run --cwd backend build",
+    "build:engine": "bun run --cwd engine build",
+    "build:ws": "bun run --cwd ws-service build",
+    "build:poller": "bun run --cwd db-poller build",
+    "build:frontend": "bun run --cwd frontend build",
+    "build:all": "bun run build:db && bun run build:backend && bun run build:engine && bun run build:ws && bun run build:poller && bun run build:frontend",
+
+    "start:backend": "bun --cwd backend src/index.js",
+    "start:engine": "bun --cwd engine dist/index.js",
+    "start:ws": "bun --cwd ws-service dist/index.js",
+    "start:poller": "bun --cwd db-poller dist/index.js"
   }
 }
