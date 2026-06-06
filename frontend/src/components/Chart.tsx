@@ -1,19 +1,41 @@
 import { useEffect, useRef } from 'react';
 import { createChart, ColorType, CandlestickSeries, type IChartApi, type ISeriesApi, type CandlestickData, type Time } from 'lightweight-charts';
+import type { Trade } from '../types';
 
 interface Props {
   market: string;
+  trades: Trade[];
 }
 
-const BINANCE_REST = 'https://fapi.binance.com';
+function buildCandles(trades: Trade[]): CandlestickData[] {
+  if (trades.length === 0) return [];
 
-export default function Chart({ market }: Props) {
+  const minuteMap = new Map<number, { open: number; high: number; low: number; close: number }>();
+
+  for (const t of trades) {
+    const ms = t.createdAt ?? Date.now();
+    const minute = Math.floor(ms / 60000) * 60;
+
+    const existing = minuteMap.get(minute);
+    if (existing) {
+      existing.high = Math.max(existing.high, t.price);
+      existing.low = Math.min(existing.low, t.price);
+      existing.close = t.price;
+    } else {
+      minuteMap.set(minute, { open: t.price, high: t.price, low: t.price, close: t.price });
+    }
+  }
+
+  return Array.from(minuteMap.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([time, c]) => ({ time: time as Time, ...c }));
+}
+
+export default function Chart({ market, trades }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
 
-  // Create chart once
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -53,7 +75,7 @@ export default function Chart({ market }: Props) {
       wickUpColor: '#0ecb81',
     });
 
-    seriesRef.current = series as ISeriesApi<'Candlestick'>;
+    seriesRef.current = series;
 
     const handleResize = () => {
       if (containerRef.current) {
@@ -70,61 +92,15 @@ export default function Chart({ market }: Props) {
     };
   }, []);
 
-  // Load data and connect WS when market changes
   useEffect(() => {
-    if (!seriesRef.current) return;
     const series = seriesRef.current;
-    const sym = market.toLowerCase();
-    let mounted = true;
+    if (!series) return;
 
-    wsRef.current?.close();
+    const candles = buildCandles(trades);
+    if (candles.length === 0) return;
 
-    async function load() {
-      try {
-        const res = await fetch(`${BINANCE_REST}/fapi/v1/klines?symbol=${market}&interval=1m&limit=200`);
-        const data = await res.json();
-        if (!mounted) return;
-
-        const candles: CandlestickData[] = data.map((k: any[]) => ({
-          time: (k[0] / 1000) as Time,
-          open: parseFloat(k[1]),
-          high: parseFloat(k[2]),
-          low: parseFloat(k[3]),
-          close: parseFloat(k[4]),
-        }));
-
-        series.setData(candles);
-
-        const ws = new WebSocket(`wss://fstream.binance.com/ws/${sym}@kline_1m`);
-        wsRef.current = ws;
-
-        ws.onmessage = (event) => {
-          try {
-            const msg = JSON.parse(event.data);
-            const k = msg.k;
-            if (!k) return;
-            series.update({
-              time: (k.t / 1000) as Time,
-              open: parseFloat(k.o),
-              high: parseFloat(k.h),
-              low: parseFloat(k.l),
-              close: parseFloat(k.c),
-            });
-          } catch { /* ignore */ }
-        };
-      } catch (err) {
-        console.error('Chart error:', err);
-      }
-    }
-
-    load();
-
-    return () => {
-      mounted = false;
-      wsRef.current?.close();
-      wsRef.current = null;
-    };
-  }, [market]);
+    series.setData(candles);
+  }, [trades, market]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }

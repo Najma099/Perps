@@ -131,7 +131,7 @@ function AppInner() {
         {/* Center Column: Chart + Trades */}
         <div className="flex flex-col bg-dark-900 overflow-hidden">
           <div className="flex-1 min-h-0">
-            <Chart market={market} />
+            <Chart market={market} trades={trades} />
           </div>
           <div className="h-[200px] border-t border-dark-600 bg-dark-800 flex-shrink-0">
             <div className="text-xs text-gray-500 px-3 py-1.5 border-b border-dark-600 font-medium">Market Trades</div>
