@@ -16,7 +16,10 @@ export async function hydrateEngine() {
   try {
     const balances = await prisma.balance.findMany();
     for (const b of balances) {
-      BALANCES.set(b.userId, { available: b.available, locked: b.locked });
+      BALANCES.set(b.userId, {
+        available: b.available ?? 0,
+        locked: b.locked ?? 0,
+      });
     }
     console.log(`Hydrated ${balances.length} balances`);
 

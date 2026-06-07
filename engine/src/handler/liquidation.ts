@@ -80,8 +80,10 @@ export const liquidatePosition = async (
     closedAt:    position.closedAt,
   });
 
-  await emitEvent("BALANCE_UPDATED", {
-    userId:  position.userId,
-    balance: BALANCES.get(position.userId),
-  });
+  if (userBalance) {
+    await emitEvent("BALANCE_UPDATED", {
+      userId:  position.userId,
+      balance: userBalance,
+    });
+  }
 };
