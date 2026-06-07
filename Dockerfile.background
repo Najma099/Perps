@@ -2,10 +2,9 @@ FROM oven/bun:1.3 AS base
 WORKDIR /app
 
 COPY shared/db ./shared/db
-COPY backend ./backend
-COPY engine ./engine
-COPY ws-service ./ws-service
 COPY db-poller ./db-poller
+COPY engine ./engine
+COPY scripts ./scripts
 
 WORKDIR /app/shared/db
 RUN bun install
@@ -16,14 +15,10 @@ RUN bun install
 WORKDIR /app/engine
 RUN bun install
 
-WORKDIR /app/ws-service
+WORKDIR /app/scripts
 RUN bun install
 
-WORKDIR /app/backend
-RUN bun install
+COPY start-background.sh /app/start-background.sh
+RUN chmod +x /app/start-background.sh
 
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
-
-EXPOSE 3000
-CMD ["/app/start.sh"]
+CMD ["/app/start-background.sh"]
