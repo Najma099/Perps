@@ -112,11 +112,13 @@ function connectTradeStream(market: string) {
       await redis.xAdd("stream:events", "*", {
         type: "FILL_CREATED",
         payload: JSON.stringify({
-          fillId: trade.t,
+          fillId: String(trade.t),
           market: trade.s,
           price: parseFloat(trade.p),
           qty: parseFloat(trade.q),
           side: trade.m ? "sell" : "buy",
+          long: "",
+          short: "",
           maker: "binance",
           taker: "binance",
           createdAt: trade.T,

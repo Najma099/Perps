@@ -94,10 +94,12 @@ export async function processEvent(
           console.error("FILL_CREATED invalid", parsed.error.message);
           break;
         }
+        const orderId =
+          parsed.data.side === "buy" ? parsed.data.long : parsed.data.short;
+        if (!orderId) break;
         await createFill({
           fillId: parsed.data.fillId,
-          orderId:
-            parsed.data.side === "buy" ? parsed.data.long : parsed.data.short,
+          orderId,
           market: parsed.data.market,
           side: parsed.data.side,
           qty: parsed.data.qty,
