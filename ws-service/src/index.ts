@@ -34,7 +34,7 @@ function startBinanceDepth(market: string) {
     try {
       const msg = JSON.parse(raw.toString());
       const data = msg.data;
-      if (!data?.bids || !data?.asks) return;
+      if (!data?.b || !data?.a) return;
 
       let book = orderbooks.get(market);
       if (!book) {
@@ -44,8 +44,8 @@ function startBinanceDepth(market: string) {
 
       const newBids = new Map<number, number>();
       const newAsks = new Map<number, number>();
-      for (const [p, q] of data.bids) newBids.set(parseFloat(p), parseFloat(q));
-      for (const [p, q] of data.asks) newAsks.set(parseFloat(p), parseFloat(q));
+      for (const [p, q] of data.b) newBids.set(parseFloat(p), parseFloat(q));
+      for (const [p, q] of data.a) newAsks.set(parseFloat(p), parseFloat(q));
 
       const bidDiff: [number, number][] = [];
       const askDiff: [number, number][] = [];
