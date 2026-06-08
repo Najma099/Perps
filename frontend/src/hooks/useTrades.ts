@@ -8,5 +8,9 @@ export function useTrades() {
     setTrades((prev) => [trade, ...prev].slice(0, 5000));
   }, []);
 
-  return { trades, addTrade };
+  const loadSnapshot = useCallback((snapshot: Trade[]) => {
+    setTrades(snapshot);
+  }, []);
+
+  return { trades, addTrade, loadSnapshot };
 }

@@ -31,7 +31,13 @@ export interface Trade {
   createdAt?: number;
 }
 
-export type WSMessage = OrderbookSnapshot | DepthUpdate | Trade;
+export interface TradeSnapshot {
+  type: 'tradeSnapshot';
+  market: string;
+  trades: Trade[];
+}
+
+export type WSMessage = OrderbookSnapshot | DepthUpdate | Trade | TradeSnapshot;
 
 export interface OrderPayload {
   userId: string;

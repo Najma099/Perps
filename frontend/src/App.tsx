@@ -24,7 +24,7 @@ function AppInner() {
 
   const { onMessage } = useWebSocket(market);
   const orderBook = useOrderBook();
-  const { trades, addTrade } = useTrades();
+  const { trades, addTrade, loadSnapshot } = useTrades();
   const { balance, positions, fills, fetchEquity, fetchPositions, fetchFills, placeOrder, onramp } = useApi();
   const { toast } = useToast();
 
@@ -53,6 +53,7 @@ function AppInner() {
       if (msg.type === 'depthSnapshot') orderBook.applySnapshot(msg);
       else if (msg.type === 'depthUpdate') orderBook.applyDepthUpdate(msg);
       else if (msg.type === 'trade') addTrade(msg);
+      else if (msg.type === 'tradeSnapshot') loadSnapshot(msg.trades);
     });
   }, [onMessage, orderBook, addTrade]);
 

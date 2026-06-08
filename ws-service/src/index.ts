@@ -126,6 +126,39 @@ try {
   if (!err.message.includes("BUSYGROUP")) throw err;
 }
 
+async function sendTradeSnapshot(ws: WebSocket, market: string) {
+  try {
+    const raw = await eventClient.xRevRange("stream:events", "+", "-", { COUNT: 100 });
+    if (!raw) return;
+
+    const trades: any[] = [];
+    for (const entry of raw) {
+      if (entry.message.type !== "FILL_CREATED") continue;
+      let payload: any;
+      try {
+        payload = JSON.parse(entry.message.payload);
+      } catch { continue; }
+      if (payload.market !== market) continue;
+
+      trades.push({
+        type: "trade",
+        market: payload.market,
+        price: payload.price,
+        qty: payload.qty,
+        side: payload.side,
+        tradeId: payload.fillId,
+        createdAt: payload.createdAt,
+      });
+    }
+
+    if (trades.length > 0) {
+      ws.send(JSON.stringify({ type: "tradeSnapshot", market, trades }));
+    }
+  } catch (err) {
+    console.error(`Error sending trade snapshot for ${market}:`, err);
+  }
+}
+
 const wss = new WebSocketServer({ port: env.wsPort });
 console.log(`WebSocket server on port ${env.wsPort}`);
 
@@ -179,6 +212,8 @@ wss.on("connection", (ws) => {
             }),
           );
         }
+
+        sendTradeSnapshot(ws, market);
         break;
       }
 
