@@ -1,11 +1,10 @@
 import "dotenv/config";
 import { createClient } from "redis";
-import { WebSocketServer, type WebSocket } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import { env } from "./config";
 
-
 interface DepthLevel {
-  bids: Map<number, number>; 
+  bids: Map<number, number>;
   asks: Map<number, number>;
   lastUpdateId: number;
 }
@@ -17,103 +16,107 @@ interface Subscriptions {
 const orderbooks = new Map<string, DepthLevel>();
 const clients = new Map<WebSocket, Subscriptions>();
 
+const binanceFeeds = new Map<string, WebSocket>();
+const binanceReconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function startBinanceDepth(market: string) {
+  if (binanceFeeds.has(market)) return;
+
+  const stream = `${market.toLowerCase()}@depth20@100ms`;
+  const url = `wss://fstream.binance.com/stream?streams=${stream}`;
+  const ws = new WebSocket(url);
+
+  ws.on("open", () => {
+    console.log(`Binance depth connected: ${market}`);
+  });
+
+  ws.on("message", (raw) => {
+    try {
+      const msg = JSON.parse(raw.toString());
+      const data = msg.data;
+      if (!data?.bids || !data?.asks) return;
+
+      let book = orderbooks.get(market);
+      if (!book) {
+        book = { bids: new Map(), asks: new Map(), lastUpdateId: 0 };
+        orderbooks.set(market, book);
+      }
+
+      const newBids = new Map<number, number>();
+      const newAsks = new Map<number, number>();
+      for (const [p, q] of data.bids) newBids.set(parseFloat(p), parseFloat(q));
+      for (const [p, q] of data.asks) newAsks.set(parseFloat(p), parseFloat(q));
+
+      const bidDiff: [number, number][] = [];
+      const askDiff: [number, number][] = [];
+
+      for (const [price, qty] of newBids) {
+        const prev = book.bids.get(price);
+        if (prev !== qty) bidDiff.push([price, qty]);
+      }
+      for (const [price] of book.bids) {
+        if (!newBids.has(price)) bidDiff.push([price, 0]);
+      }
+      for (const [price, qty] of newAsks) {
+        const prev = book.asks.get(price);
+        if (prev !== qty) askDiff.push([price, qty]);
+      }
+      for (const [price] of book.asks) {
+        if (!newAsks.has(price)) askDiff.push([price, 0]);
+      }
+
+      book.bids = newBids;
+      book.asks = newAsks;
+      book.lastUpdateId++;
+
+      if (bidDiff.length > 0 || askDiff.length > 0) {
+        broadcastToMarket(market, {
+          type: "depthUpdate",
+          market,
+          firstUpdateId: book.lastUpdateId,
+          lastUpdateId: book.lastUpdateId,
+          bids: bidDiff,
+          asks: askDiff,
+        });
+      }
+    } catch (err) {
+      console.error(`Binance depth error (${market}):`, err);
+    }
+  });
+
+  ws.on("close", () => {
+    console.log(`Binance depth disconnected: ${market}, reconnecting in 3s...`);
+    binanceFeeds.delete(market);
+    const timer = setTimeout(() => startBinanceDepth(market), 3000);
+    binanceReconnectTimers.set(market, timer);
+  });
+
+  ws.on("error", (err) => {
+    console.error(`Binance depth ws error (${market}):`, err.message);
+  });
+
+  binanceFeeds.set(market, ws);
+}
+
+function stopBinanceDepth(market: string) {
+  const ws = binanceFeeds.get(market);
+  if (ws) {
+    ws.close();
+    binanceFeeds.delete(market);
+  }
+  const timer = binanceReconnectTimers.get(market);
+  if (timer) {
+    clearTimeout(timer);
+    binanceReconnectTimers.delete(market);
+  }
+}
 
 const eventClient = createClient({ url: env.redisUrl }).on(
   "error",
   (err) => console.error("event redis error", err),
 );
 
-const commandClient = createClient({ url: env.redisUrl }).on(
-  "error",
-  (err) => console.error("command redis error", err),
-);
-
-const responseClient = createClient({ url: env.redisUrl }).on(
-  "error",
-  (err) => console.error("response redis error", err),
-);
-
-await Promise.all([
-  eventClient.connect(),
-  commandClient.connect(),
-  responseClient.connect(),
-]);
-
-async function requestSnapshot(market: string) {
-  const correlationId = crypto.randomUUID();
-  await commandClient.xAdd(env.incomingQueue, "*", {
-    correlationId,
-    responseQueue: env.responseQueue,
-    type: "get_orderbook_snapshot",
-    payload: JSON.stringify({ market }),
-  });
-
-  const timeout = 10000;
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    const raw = (await responseClient.xReadGroup(
-      "ws-service",
-      "ws-worker-1",
-      [{ key: env.responseQueue, id: ">" }],
-      { COUNT: 10, BLOCK: 2000 },
-    )) as any;
-    if (!raw) continue;
-
-    for (const stream of raw) {
-      for (const entry of stream.messages) {
-        const msg = entry.message;
-        if (msg.correlationId === correlationId) {
-          await responseClient.xAck(env.responseQueue, "ws-worker-1", entry.id);
-          if (msg.ok === "true") {
-            return JSON.parse(msg.data);
-          }
-          throw new Error(msg.error || "snapshot request failed");
-        }
-        await responseClient.xAck(env.responseQueue, "ws-worker-1", entry.id);
-      }
-    }
-  }
-  throw new Error("snapshot request timed out");
-}
-
-async function bootstrap() {
-  try {
-    await responseClient.xGroupCreate(env.responseQueue, "ws-service", "$", {
-      MKSTREAM: true,
-    });
-  } catch (err: any) {
-    if (!err.message.includes("BUSYGROUP")) throw err;
-  }
-
-  const knownMarkets = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
-  for (const market of knownMarkets) {
-    try {
-      const data = await requestSnapshot(market);
-      const bids = new Map<number, number>();
-      const asks = new Map<number, number>();
-
-      for (const [price, qty] of data.bids ?? []) {
-        if (qty > 0) bids.set(price, qty);
-      }
-      for (const [price, qty] of data.asks ?? []) {
-        if (qty > 0) asks.set(price, qty);
-      }
-
-      orderbooks.set(market, {
-        bids,
-        asks,
-        lastUpdateId: data.lastUpdateId ?? 0,
-      });
-      console.log(`Bootstrapped orderbook for ${market}`);
-    } catch (err) {
-      console.warn(`Failed to bootstrap ${market}:`, err);
-      orderbooks.set(market, { bids: new Map(), asks: new Map(), lastUpdateId: 0 });
-    }
-  }
-  console.log(`Bootstrapped ${orderbooks.size} orderbooks`);
-}
-
-await bootstrap();
+await eventClient.connect();
 
 try {
   await eventClient.xGroupCreate("stream:events", "ws-service", "$", {
@@ -144,6 +147,8 @@ wss.on("connection", (ws) => {
         const market = msg.market as string;
         if (!market) break;
         subs.markets.add(market);
+
+        startBinanceDepth(market);
 
         const book = orderbooks.get(market);
         if (book) {
@@ -179,7 +184,13 @@ wss.on("connection", (ws) => {
 
       case "unsubscribe": {
         const market = msg.market as string;
-        if (market) subs.markets.delete(market);
+        if (market) {
+          subs.markets.delete(market);
+          const hasOther = [...clients.values()].some((c) =>
+            c.markets.has(market),
+          );
+          if (!hasOther) stopBinanceDepth(market);
+        }
         break;
       }
 
@@ -191,6 +202,12 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     clients.delete(ws);
+    for (const market of subs.markets) {
+      const hasOther = [...clients.values()].some((c) =>
+        c.markets.has(market),
+      );
+      if (!hasOther) stopBinanceDepth(market);
+    }
   });
 });
 
@@ -231,40 +248,8 @@ async function processEvent(entry: {
   }
 
   switch (type) {
-    case "ORDERBOOK_UPDATE": {
-      const { market, firstUpdateId, lastUpdateId, bids, asks } = payload;
-      let book = orderbooks.get(market);
-      if (!book) {
-        book = { bids: new Map(), asks: new Map(), lastUpdateId: 0 };
-        orderbooks.set(market, book);
-      }
-
-      for (const [price, qty] of bids ?? []) {
-        if (qty === 0) {
-          book.bids.delete(price);
-        } else {
-          book.bids.set(price, qty);
-        }
-      }
-      for (const [price, qty] of asks ?? []) {
-        if (qty === 0) {
-          book.asks.delete(price);
-        } else {
-          book.asks.set(price, qty);
-        }
-      }
-      book.lastUpdateId = lastUpdateId;
-
-      broadcastToMarket(market, {
-        type: "depthUpdate",
-        market,
-        firstUpdateId,
-        lastUpdateId,
-        bids: [...(bids ?? [])],
-        asks: [...(asks ?? [])],
-      });
+    case "ORDERBOOK_UPDATE":
       break;
-    }
 
     case "FILL_CREATED":
       broadcastTrade(payload);
