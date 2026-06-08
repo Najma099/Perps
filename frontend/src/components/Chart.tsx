@@ -96,7 +96,8 @@ export default function Chart({ market, trades }: Props) {
     const series = seriesRef.current;
     if (!series) return;
 
-    const candles = buildCandles(trades);
+    const marketTrades = trades.filter((t) => t.market === market);
+    const candles = buildCandles(marketTrades);
     if (candles.length === 0) return;
 
     series.setData(candles);

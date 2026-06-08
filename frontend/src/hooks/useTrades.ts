@@ -5,7 +5,7 @@ export function useTrades() {
   const [trades, setTrades] = useState<Trade[]>([]);
 
   const addTrade = useCallback((trade: Trade) => {
-    setTrades((prev) => [trade, ...prev].slice(0, 50));
+    setTrades((prev) => [trade, ...prev].slice(0, 5000));
   }, []);
 
   return { trades, addTrade };
