@@ -10,6 +10,16 @@ const redis = createClient({ url: REDIS_URL }).on("error", (err) =>
 );
 await redis.connect();
 
+const lastWrite = new Map<string, number>();
+
+function shouldThrottle(market: string): boolean {
+  const now = Date.now();
+  const last = lastWrite.get(market) ?? 0;
+  if (now - last < 1000) return true;
+  lastWrite.set(market, now);
+  return false;
+}
+
 function connectTradeStream(market: string) {
   const stream = `${market.toLowerCase()}@trade`;
   const url = `wss://fstream.binance.com/stream?streams=${stream}`;
@@ -17,13 +27,14 @@ function connectTradeStream(market: string) {
 
   ws.on("open", () => console.log(`[feed] trade connected: ${market}`));
 
-  ws.on("message", async (raw) => {
+  ws.on("message", (raw) => {
     try {
       const msg = JSON.parse(raw.toString());
       const trade = msg.data;
       if (!trade) return;
+      if (shouldThrottle(market)) return;
 
-      await redis.xAdd("stream:events", "*", {
+      redis.xAdd("stream:events", "*", {
         type: "FILL_CREATED",
         payload: JSON.stringify({
           fillId: String(trade.t),
@@ -38,7 +49,7 @@ function connectTradeStream(market: string) {
           createdAt: trade.T,
         }),
         createdAt: String(Date.now()),
-      });
+      }).catch(() => {});
     } catch (err) {
       console.error(`[feed] trade error (${market}):`, err);
     }
@@ -56,7 +67,7 @@ for (const m of MARKETS) {
   connectTradeStream(m);
 }
 
-console.log("Market feed running. Streaming Binance trades -> Redis stream:events");
+console.log("Market feed running. Streaming Binance trades -> Redis stream:events (throttled: 1/sec/market)");
 
 process.on("SIGINT", () => {
   redis.disconnect();

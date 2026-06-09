@@ -16,101 +16,6 @@ interface Subscriptions {
 const orderbooks = new Map<string, DepthLevel>();
 const clients = new Map<WebSocket, Subscriptions>();
 
-const binanceFeeds = new Map<string, WebSocket>();
-const binanceReconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-function startBinanceDepth(market: string) {
-  if (binanceFeeds.has(market)) return;
-
-  const stream = `${market.toLowerCase()}@depth20@100ms`;
-  const url = `wss://fstream.binance.com/stream?streams=${stream}`;
-  const ws = new WebSocket(url);
-
-  ws.on("open", () => {
-    console.log(`Binance depth connected: ${market}`);
-  });
-
-  ws.on("message", (raw) => {
-    try {
-      const msg = JSON.parse(raw.toString());
-      const data = msg.data;
-      if (!data?.b || !data?.a) return;
-
-      let book = orderbooks.get(market);
-      if (!book) {
-        book = { bids: new Map(), asks: new Map(), lastUpdateId: 0 };
-        orderbooks.set(market, book);
-      }
-
-      const newBids = new Map<number, number>();
-      const newAsks = new Map<number, number>();
-      for (const [p, q] of data.b) newBids.set(parseFloat(p), parseFloat(q));
-      for (const [p, q] of data.a) newAsks.set(parseFloat(p), parseFloat(q));
-
-      const bidDiff: [number, number][] = [];
-      const askDiff: [number, number][] = [];
-
-      for (const [price, qty] of newBids) {
-        const prev = book.bids.get(price);
-        if (prev !== qty) bidDiff.push([price, qty]);
-      }
-      for (const [price] of book.bids) {
-        if (!newBids.has(price)) bidDiff.push([price, 0]);
-      }
-      for (const [price, qty] of newAsks) {
-        const prev = book.asks.get(price);
-        if (prev !== qty) askDiff.push([price, qty]);
-      }
-      for (const [price] of book.asks) {
-        if (!newAsks.has(price)) askDiff.push([price, 0]);
-      }
-
-      book.bids = newBids;
-      book.asks = newAsks;
-      book.lastUpdateId++;
-
-      if (bidDiff.length > 0 || askDiff.length > 0) {
-        broadcastToMarket(market, {
-          type: "depthUpdate",
-          market,
-          firstUpdateId: book.lastUpdateId,
-          lastUpdateId: book.lastUpdateId,
-          bids: bidDiff,
-          asks: askDiff,
-        });
-      }
-    } catch (err) {
-      console.error(`Binance depth error (${market}):`, err);
-    }
-  });
-
-  ws.on("close", () => {
-    console.log(`Binance depth disconnected: ${market}, reconnecting in 3s...`);
-    binanceFeeds.delete(market);
-    const timer = setTimeout(() => startBinanceDepth(market), 3000);
-    binanceReconnectTimers.set(market, timer);
-  });
-
-  ws.on("error", (err) => {
-    console.error(`Binance depth ws error (${market}):`, err.message);
-  });
-
-  binanceFeeds.set(market, ws);
-}
-
-function stopBinanceDepth(market: string) {
-  const ws = binanceFeeds.get(market);
-  if (ws) {
-    ws.close();
-    binanceFeeds.delete(market);
-  }
-  const timer = binanceReconnectTimers.get(market);
-  if (timer) {
-    clearTimeout(timer);
-    binanceReconnectTimers.delete(market);
-  }
-}
-
 const eventClient = createClient({ url: env.redisUrl }).on(
   "error",
   (err) => console.error("event redis error", err),
@@ -181,8 +86,6 @@ wss.on("connection", (ws) => {
         if (!market) break;
         subs.markets.add(market);
 
-        startBinanceDepth(market);
-
         const book = orderbooks.get(market);
         if (book) {
           const bids = [...book.bids.entries()]
@@ -221,10 +124,6 @@ wss.on("connection", (ws) => {
         const market = msg.market as string;
         if (market) {
           subs.markets.delete(market);
-          const hasOther = [...clients.values()].some((c) =>
-            c.markets.has(market),
-          );
-          if (!hasOther) stopBinanceDepth(market);
         }
         break;
       }
@@ -237,12 +136,6 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     clients.delete(ws);
-    for (const market of subs.markets) {
-      const hasOther = [...clients.values()].some((c) =>
-        c.markets.has(market),
-      );
-      if (!hasOther) stopBinanceDepth(market);
-    }
   });
 });
 
@@ -283,8 +176,35 @@ async function processEvent(entry: {
   }
 
   switch (type) {
-    case "ORDERBOOK_UPDATE":
+    case "ORDERBOOK_UPDATE": {
+      const { market, bids, asks, lastUpdateId } = payload;
+
+      let book = orderbooks.get(market);
+      if (!book) {
+        book = { bids: new Map(), asks: new Map(), lastUpdateId: 0 };
+        orderbooks.set(market, book);
+      }
+
+      for (const [price, qty] of bids) {
+        if (qty === 0) book.bids.delete(price);
+        else book.bids.set(price, qty);
+      }
+      for (const [price, qty] of asks) {
+        if (qty === 0) book.asks.delete(price);
+        else book.asks.set(price, qty);
+      }
+      book.lastUpdateId = lastUpdateId;
+
+      broadcastToMarket(market, {
+        type: "depthUpdate",
+        market,
+        firstUpdateId: lastUpdateId,
+        lastUpdateId: lastUpdateId,
+        bids,
+        asks,
+      });
       break;
+    }
 
     case "FILL_CREATED":
       broadcastTrade(payload);
