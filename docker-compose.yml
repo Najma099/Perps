@@ -46,7 +46,7 @@ services:
       - redis
     restart: unless-stopped
 
-  worker:
+  worker-btc:
     build:
       context: .
       dockerfile: Dockerfile.background
@@ -55,6 +55,38 @@ services:
       MARKET: BTCUSDT
       BASE_PRICE: "85000"
       SPREAD: "2000"
+    working_dir: /app/scripts
+    command: ["bun", "run", "worker.ts"]
+    depends_on:
+      - redis
+      - engine
+    restart: unless-stopped
+
+  worker-eth:
+    build:
+      context: .
+      dockerfile: Dockerfile.background
+    environment:
+      REDIS_URL: redis://redis:6379
+      MARKET: ETHUSDT
+      BASE_PRICE: "3500"
+      SPREAD: "100"
+    working_dir: /app/scripts
+    command: ["bun", "run", "worker.ts"]
+    depends_on:
+      - redis
+      - engine
+    restart: unless-stopped
+
+  worker-sol:
+    build:
+      context: .
+      dockerfile: Dockerfile.background
+    environment:
+      REDIS_URL: redis://redis:6379
+      MARKET: SOLUSDT
+      BASE_PRICE: "170"
+      SPREAD: "10"
     working_dir: /app/scripts
     command: ["bun", "run", "worker.ts"]
     depends_on:

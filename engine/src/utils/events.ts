@@ -11,6 +11,7 @@ export async function emitEvent(
       type,
       payload: JSON.stringify(payload),
       createdAt: String(Date.now())
-    }
+    },
+    { TRIM: { strategy: "MAXLEN", strategyModifier: "~", threshold: 10000 } }
   );
 }

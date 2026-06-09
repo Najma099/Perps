@@ -55,7 +55,7 @@ async function sendOrder(
 }
 
 async function main() {
-  console.log(`[worker] Starting throttled order generator for ${MARKET}`);
+  console.log(`[worker] Starting continuous order generator for ${MARKET}`);
 
   const redis = createClient({ url: REDIS_URL });
   await redis.connect();
@@ -77,15 +77,21 @@ async function main() {
         console.log(`[worker] \u{1F4B0} +$${amount.toLocaleString()} \u2192 ${user}`);
       }
 
-      const side = Math.random() < 0.5 ? "buy" : "sell";
-      const orderType = Math.random() < 0.7 ? "limit" : "market";
-      await sendOrder(redis, side, orderType);
+      await sendOrder(redis, "buy", "limit");
+      await sleep(rand(400, 800));
+      await sendOrder(redis, "sell", "limit");
 
-      count++;
-      await sleep(rand(25000, 35000));
+      if (Math.random() < 0.2) {
+        await sleep(rand(600, 1200));
+        const side = Math.random() < 0.5 ? "buy" : "sell";
+        await sendOrder(redis, side, "market");
+      }
+
+      count += 2;
+      await sleep(rand(1000, 2500));
     } catch (err) {
       console.error("[worker] Error:", err);
-      await sleep(30000);
+      await sleep(3000);
     }
   }
 }
