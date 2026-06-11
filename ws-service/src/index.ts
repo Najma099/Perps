@@ -31,11 +31,17 @@ try {
   if (!err.message.includes("BUSYGROUP")) throw err;
 }
 
+function isPublicMarketTrade(payload: Record<string, unknown>): boolean {
+  if (payload.source === "market") return true;
+  return payload.maker === "binance" && payload.taker === "binance";
+}
+
 async function sendTradeSnapshot(ws: WebSocket, market: string) {
   try {
-    const raw = await eventClient.xRevRange("stream:events", "+", "-", { COUNT: 100 });
+    const raw = await eventClient.xRevRange("stream:events", "+", "-", { COUNT: 10000 });
     if (!raw) return;
 
+    const seen = new Set<string>();
     const trades: any[] = [];
     for (const entry of raw) {
       if (entry.message.type !== "FILL_CREATED") continue;
@@ -44,6 +50,9 @@ async function sendTradeSnapshot(ws: WebSocket, market: string) {
         payload = JSON.parse(entry.message.payload);
       } catch { continue; }
       if (payload.market !== market) continue;
+      if (!isPublicMarketTrade(payload)) continue;
+      if (seen.has(payload.fillId)) continue;
+      seen.add(payload.fillId);
 
       trades.push({
         type: "trade",
@@ -57,7 +66,8 @@ async function sendTradeSnapshot(ws: WebSocket, market: string) {
     }
 
     if (trades.length > 0) {
-      ws.send(JSON.stringify({ type: "tradeSnapshot", market, trades }));
+      trades.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+      ws.send(JSON.stringify({ type: "tradeSnapshot", market, trades: trades.slice(0, 500) }));
     }
   } catch (err) {
     console.error(`Error sending trade snapshot for ${market}:`, err);
@@ -149,6 +159,8 @@ function broadcastToMarket(market: string, data: object) {
 }
 
 function broadcastTrade(fill: any) {
+  if (!isPublicMarketTrade(fill)) return;
+
   const data = {
     type: "trade",
     market: fill.market,

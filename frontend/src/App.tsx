@@ -58,7 +58,7 @@ function AppInner() {
       else if (msg.type === 'trade') addTrade(msg);
       else if (msg.type === 'tradeSnapshot') loadSnapshot(msg.trades);
     });
-  }, [onMessage, orderBook, addTrade]);
+  }, [onMessage, orderBook.applySnapshot, orderBook.applyDepthUpdate, addTrade, loadSnapshot]);
 
   const handlePlaceOrder = async (order: any) => {
     try {

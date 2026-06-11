@@ -46,6 +46,7 @@ function connectTradeStream(market: string) {
           short: "",
           maker: "binance",
           taker: "binance",
+          source: "market",
           createdAt: trade.T,
         }),
         createdAt: String(Date.now()),

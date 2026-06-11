@@ -3,8 +3,28 @@ import { createClient } from "redis";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const MARKET = process.env.MARKET || "BTCUSDT";
-const BASE_PRICE = parseInt(process.env.BASE_PRICE || "85000");
 const SPREAD = parseInt(process.env.SPREAD || "2000");
+
+let basePrice = parseInt(process.env.BASE_PRICE || "0");
+
+async function refreshBasePrice(): Promise<number> {
+  if (process.env.BASE_PRICE) {
+    basePrice = parseInt(process.env.BASE_PRICE, 10);
+    return basePrice;
+  }
+  try {
+    const res = await fetch(
+      `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${MARKET}`,
+    );
+    if (res.ok) {
+      const data = (await res.json()) as { price: string };
+      basePrice = Math.round(parseFloat(data.price));
+    }
+  } catch {
+    if (!basePrice) basePrice = 64000;
+  }
+  return basePrice;
+}
 
 const USERS = ["alice", "bob", "carol", "dave", "eve"];
 
@@ -28,7 +48,7 @@ async function sendOrder(
   const user = pick(USERS);
   const leverage = pick([3, 5, 10, 20]);
   const offset = rand(-SPREAD / 2, SPREAD / 2);
-  const price = Math.round(BASE_PRICE + offset);
+  const price = Math.round(basePrice + offset);
   const qty = parseFloat(rand(0.1, 2.0).toFixed(3));
 
   const payload: Record<string, unknown> = {
@@ -60,6 +80,10 @@ async function main() {
   const redis = createClient({ url: REDIS_URL });
   await redis.connect();
   console.log("[worker] Connected to Redis");
+
+  await refreshBasePrice();
+  console.log(`[worker] Base price for ${MARKET}: $${basePrice}`);
+  setInterval(() => refreshBasePrice(), 60_000);
 
   let count = 0;
 

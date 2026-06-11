@@ -33,6 +33,8 @@ const publisher = createClient({ url: env.redisUrl }).on("error", (error) => {
   console.error("Redis publisher error", error);
 });
 
+export { publisher };
+
 const subscriber = createClient({ url: env.redisUrl }).on("error", (error) => {
   console.error("Redis subscriber error", error);
 });

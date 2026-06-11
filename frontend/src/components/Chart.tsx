@@ -1,35 +1,49 @@
-import { useEffect, useRef } from 'react';
-import { createChart, ColorType, CandlestickSeries, type IChartApi, type ISeriesApi, type CandlestickData, type UTCTimestamp } from 'lightweight-charts';
+import { useEffect, useRef, useState } from 'react';
+import {
+  createChart,
+  ColorType,
+  CandlestickSeries,
+  type IChartApi,
+  type ISeriesApi,
+  type CandlestickData,
+  type UTCTimestamp,
+} from 'lightweight-charts';
 import type { Trade } from '../types';
+import { candleBucketTime, fetchCandles } from '../lib/candles';
 
 interface Props {
   market: string;
   trades: Trade[];
 }
 
-function bucketTime(ms: number): UTCTimestamp {
-  return Math.floor(ms / 300000) * 300 as UTCTimestamp;
-}
+const VISIBLE_BARS = 120;
 
-function buildCandleMap(trades: Trade[]) {
-  const map = new Map<number, { open: number; high: number; low: number; close: number }>();
-  for (const t of trades) {
-    const ms = t.createdAt ?? Date.now();
-    const b = bucketTime(ms);
-    const existing = map.get(b);
-    if (existing) {
-      existing.high = Math.max(existing.high, t.price);
-      existing.low = Math.min(existing.low, t.price);
-      existing.close = t.price;
-    } else {
-      map.set(b, { open: t.price, high: t.price, low: t.price, close: t.price });
-    }
+function showRecentBars(chart: IChartApi, barCount: number) {
+  if (barCount <= VISIBLE_BARS) {
+    chart.timeScale().fitContent();
+    return;
   }
-  return map;
+  chart.timeScale().setVisibleLogicalRange({
+    from: barCount - VISIBLE_BARS,
+    to: barCount - 1,
+  });
 }
 
-function toCandle(time: UTCTimestamp, c: { open: number; high: number; low: number; close: number }): CandlestickData {
-  return { time, ...c };
+function mergeTradeIntoCandle(
+  prev: CandlestickData | undefined,
+  price: number,
+  time: UTCTimestamp,
+): CandlestickData {
+  if (!prev) {
+    return { time, open: price, high: price, low: price, close: price };
+  }
+  return {
+    time,
+    open: prev.open,
+    high: Math.max(prev.high, price),
+    low: Math.min(prev.low, price),
+    close: price,
+  };
 }
 
 export default function Chart({ market, trades }: Props) {
@@ -37,6 +51,8 @@ export default function Chart({ market, trades }: Props) {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const lastDataRef = useRef<Map<number, CandlestickData>>(new Map());
+  const seenTradeIdsRef = useRef<Set<string>>(new Set());
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -58,6 +74,9 @@ export default function Chart({ market, trades }: Props) {
         borderColor: '#26262f',
         timeVisible: true,
         secondsVisible: false,
+        barSpacing: 8,
+        minBarSpacing: 3,
+        rightOffset: 8,
       },
       rightPriceScale: {
         borderColor: '#26262f',
@@ -82,52 +101,84 @@ export default function Chart({ market, trades }: Props) {
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) {
-        chart.applyOptions({ width: entry.contentRect.width, height: entry.contentRect.height });
+        chart.applyOptions({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
       }
     });
     ro.observe(containerRef.current);
 
+    let cancelled = false;
+    setLoaded(false);
+    lastDataRef.current = new Map();
+    seenTradeIdsRef.current = new Set();
+
+    fetchCandles(market).then((candles) => {
+      if (cancelled || !seriesRef.current) return;
+
+      if (candles.length > 0) {
+        const data: CandlestickData[] = candles.map((c) => ({
+          time: c.time as UTCTimestamp,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+        }));
+
+        seriesRef.current.setData(data);
+        for (const c of data) lastDataRef.current.set(c.time as number, c);
+        showRecentBars(chart, data.length);
+      }
+
+      setLoaded(true);
+    });
+
     return () => {
+      cancelled = true;
       ro.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
       lastDataRef.current = new Map();
+      seenTradeIdsRef.current = new Set();
+      setLoaded(false);
     };
-  }, []);
+  }, [market]);
 
   useEffect(() => {
     const series = seriesRef.current;
-    if (!series) return;
+    if (!series || !loaded) return;
 
-    const map = buildCandleMap(trades.filter((t) => t.market === market));
     const last = lastDataRef.current;
+    const seen = seenTradeIdsRef.current;
 
-    const sorted = [...map.entries()].sort(([a], [b]) => a - b);
+    for (const t of trades) {
+      if (t.market !== market) continue;
+      if (seen.has(t.tradeId)) continue;
+      seen.add(t.tradeId);
 
-    if (last.size === 0) {
-      const data = sorted.map(([time, c]) => toCandle(time as UTCTimestamp, c));
-      series.setData(data);
-      for (const d of data) last.set(d.time as number, d);
-      return;
-    }
+      const bucket = candleBucketTime(t.createdAt ?? Date.now());
+      const time = bucket as UTCTimestamp;
+      const prev = last.get(bucket);
+      const candle = mergeTradeIntoCandle(prev, t.price, time);
 
-    for (const [time, c] of sorted) {
-      const candle = toCandle(time as UTCTimestamp, c);
-      const prev = last.get(time);
-      if (!prev) {
-        series.update(candle);
-      } else if (
-        prev.open !== c.open ||
-        prev.high !== c.high ||
-        prev.low !== c.low ||
-        prev.close !== c.close
+      const isNewBucket = !prev;
+      if (
+        isNewBucket ||
+        prev.open !== candle.open ||
+        prev.high !== candle.high ||
+        prev.low !== candle.low ||
+        prev.close !== candle.close
       ) {
         series.update(candle);
+        last.set(bucket, candle);
+        if (isNewBucket && chartRef.current) {
+          showRecentBars(chartRef.current, last.size);
+        }
       }
-      last.set(time, candle);
     }
-  }, [trades, market]);
+  }, [trades, market, loaded]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }

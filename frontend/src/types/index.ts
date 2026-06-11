@@ -70,6 +70,14 @@ export interface Balance {
   total: number;
 }
 
+export interface Candle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
 export interface Order {
   orderId: string;
   market: string;

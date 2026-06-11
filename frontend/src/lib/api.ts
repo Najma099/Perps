@@ -1,5 +1,5 @@
 import { API_URL } from './constants';
-import type { Balance, Position, Order, OrderPayload, Fill } from '../types';
+import type { Balance, Position, Order, OrderPayload, Fill, Candle } from '../types';
 
 async function request<T = unknown>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('token');
@@ -46,4 +46,7 @@ export const api = {
 
   getOpenOrders: (market: string) =>
     request<{ orders: Order[] }>(`/perps/orders/open/${market}`),
+
+  getCandles: (market: string) =>
+    request<{ candles: Candle[] }>(`/perps/candles/${market}`),
 };

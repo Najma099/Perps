@@ -14,6 +14,11 @@ export default defineConfig({
         target: 'ws://localhost:8080',
         ws: true,
       },
+      '/binance': {
+        target: 'https://fapi.binance.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/binance/, ''),
+      },
     },
   },
 })

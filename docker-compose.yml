@@ -53,7 +53,6 @@ services:
     environment:
       REDIS_URL: redis://redis:6379
       MARKET: BTCUSDT
-      BASE_PRICE: "85000"
       SPREAD: "2000"
     working_dir: /app/scripts
     command: ["bun", "run", "worker.ts"]
