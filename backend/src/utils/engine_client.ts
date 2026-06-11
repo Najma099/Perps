@@ -106,7 +106,15 @@ export async function listenForEngineResponses(): Promise<void> {
         }
       }
     } catch (err) {
-      console.error("Backend response listener error, retrying in 3s:", err);
+      console.error("Backend response listener error:", err);
+      if (String(err).includes("NOGROUP")) {
+        try {
+          await subscriber.xGroupCreate(env.responseQueue, "backend", "$", { MKSTREAM: true });
+          console.log("Recreated response consumer group");
+        } catch (e: any) {
+          if (!String(e).includes("BUSYGROUP")) console.error("Failed to recreate group:", e);
+        }
+      }
       await new Promise((r) => setTimeout(r, 3000));
     }
   }

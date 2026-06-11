@@ -150,7 +150,17 @@ for (;;) {
       }
     }
   } catch (err) {
-    console.error("Engine read error, retrying in 3s:", err);
+    console.error("Engine read error:", err);
+    if (String(err).includes("NOGROUP")) {
+      try {
+        await brokerClient.xGroupCreate(env.incomingQueue, "engine", "0", {
+          MKSTREAM: true,
+        });
+        console.log("Recreated engine consumer group");
+      } catch (e: any) {
+        if (!String(e).includes("BUSYGROUP")) console.error("Failed to recreate group:", e);
+      }
+    }
     await new Promise((r) => setTimeout(r, 3000));
   }
 }
