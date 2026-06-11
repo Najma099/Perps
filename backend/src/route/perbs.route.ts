@@ -29,7 +29,7 @@ router.post(
     const { userId } = req;
     const parsed = onrampSchema.safeParse({ userId, amount: req.body.amount });
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten });
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
@@ -56,7 +56,7 @@ router.post(
       price: req.body.price,
     });
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten });
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
@@ -77,7 +77,7 @@ router.delete(
       orderId: req.body.orderId,
     });
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten });
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
@@ -95,7 +95,7 @@ router.get(
     const { userId } = req;
     const parsed = getEquitySchema.safeParse({ userId });
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten });
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
@@ -116,7 +116,7 @@ router.get(
       market: req.params.market,
     });
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten });
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
@@ -137,7 +137,7 @@ router.get(
       market: req.params.market,
     });
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten });
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
@@ -158,7 +158,7 @@ router.get(
       market: req.params.market,
     });
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten });
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
@@ -180,7 +180,7 @@ router.get(
       market: req.params.market,
     });
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten });
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
@@ -202,7 +202,7 @@ router.get(
       market: req.query.market as string | undefined,
     });
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.flatten });
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
 
