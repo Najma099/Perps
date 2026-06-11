@@ -3,7 +3,7 @@ import { createClient } from "redis";
 import WebSocket from "ws";
 
 const REDIS_URL = process.env.REDIS_URL!;
-const MARKETS = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
+const MARKETS = ["BTCUSDT"];
 
 const redis = createClient({ url: REDIS_URL }).on("error", (err) =>
   console.error("redis error", err),

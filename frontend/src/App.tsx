@@ -4,6 +4,7 @@ import { useOrderBook } from './hooks/useOrderBook';
 import { useTrades } from './hooks/useTrades';
 import { useApi } from './hooks/useApi';
 import { ToastProvider, useToast } from './components/Toast';
+import { MARKET } from './lib/constants';
 import OrderBook from './components/OrderBook';
 import Fills from './components/Fills';
 import OrderForm from './components/OrderForm';
@@ -18,12 +19,11 @@ import ProfileModal from './components/ProfileModal';
 import Chart from './components/Chart';
 
 function AppInner() {
-  const [market, setMarket] = useState('BTCUSDT');
   const [showAuth, setShowAuth] = useState(!localStorage.getItem('token'));
   const [showDeposit, setShowDeposit] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
-  const { onMessage } = useWebSocket(market);
+  const { onMessage } = useWebSocket(MARKET);
   const orderBook = useOrderBook();
   const { trades, addTrade, loadSnapshot } = useTrades();
   const { balance, positions, openOrders, fills, fetchEquity, fetchPositions, fetchOpenOrders, fetchFills, placeOrder, cancelOrder, onramp } = useApi();
@@ -32,10 +32,10 @@ function AppInner() {
   const handleAuth = useCallback(() => {
     setShowAuth(false);
     fetchEquity();
-    fetchPositions(market);
-    fetchOpenOrders(market);
-    fetchFills(market);
-  }, [fetchEquity, fetchPositions, fetchOpenOrders, fetchFills, market]);
+    fetchPositions(MARKET);
+    fetchOpenOrders(MARKET);
+    fetchFills(MARKET);
+  }, [fetchEquity, fetchPositions, fetchOpenOrders, fetchFills]);
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
@@ -46,10 +46,10 @@ function AppInner() {
   useEffect(() => {
     if (!localStorage.getItem('token')) return;
     fetchEquity();
-    fetchPositions(market);
-    fetchOpenOrders(market);
-    fetchFills(market);
-  }, [market, fetchEquity, fetchPositions, fetchOpenOrders, fetchFills]);
+    fetchPositions(MARKET);
+    fetchOpenOrders(MARKET);
+    fetchFills(MARKET);
+  }, [fetchEquity, fetchPositions, fetchOpenOrders, fetchFills]);
 
   useEffect(() => {
     onMessage((msg) => {
@@ -67,8 +67,8 @@ function AppInner() {
         `Order placed: ${order.positionType.toUpperCase()} ${order.qty} ${order.market}`,
         'success',
       );
-      setTimeout(() => fetchPositions(market), 500);
-      setTimeout(() => fetchOpenOrders(market), 500);
+      setTimeout(() => fetchPositions(MARKET), 500);
+      setTimeout(() => fetchOpenOrders(MARKET), 500);
       setTimeout(() => fetchEquity(), 500);
     } catch (err: any) {
       toast(err.message, 'error');
@@ -88,7 +88,7 @@ function AppInner() {
       <header className="flex items-center justify-between px-4 py-2 border-b border-dark-600 bg-dark-800/95 backdrop-blur-sm z-10">
         <div className="flex items-center gap-6">
           <h1 className="text-lg font-bold text-yellow-500 tracking-tight">PerpEx</h1>
-          <MarketSelector market={market} onChange={setMarket} />
+          <MarketSelector />
           <PriceTicker bestBid={orderBook.bids[0]} bestAsk={orderBook.asks[0]} />
         </div>
         <div className="flex items-center gap-4">
@@ -105,7 +105,7 @@ function AppInner() {
               onSignOut={handleSignOut}
               onOpenDeposit={() => setShowDeposit(true)}
               onOpenProfile={() => {
-                fetchFills(market);
+                fetchFills(MARKET);
                 setShowProfile(true);
               }}
             />
@@ -136,12 +136,12 @@ function AppInner() {
         {/* Center Column: Chart + Trades */}
         <div className="flex flex-col bg-dark-900 overflow-hidden">
           <div className="flex-1 min-h-0">
-            <Chart market={market} trades={trades} />
+            <Chart market={MARKET} trades={trades} />
           </div>
           <div className="h-[200px] border-t border-dark-600 bg-dark-800 flex-shrink-0">
             <div className="text-xs text-gray-500 px-3 py-1.5 border-b border-dark-600 font-medium">Market Trades</div>
             <div className="h-[calc(100%-32px)]">
-              <Fills trades={trades} />
+              <Fills trades={trades} market={MARKET} />
             </div>
           </div>
         </div>
@@ -150,7 +150,7 @@ function AppInner() {
         <div className="border-l border-dark-600 flex flex-col bg-dark-800 overflow-hidden">
           <div className="flex-shrink-0">
             <OrderForm
-              market={market}
+              market={MARKET}
               balance={balance}
               onPlaceOrder={handlePlaceOrder}
             />

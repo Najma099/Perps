@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { createChart, ColorType, CandlestickSeries, type IChartApi, type ISeriesApi, type CandlestickData, type Time } from 'lightweight-charts';
+import { createChart, ColorType, CandlestickSeries, type IChartApi, type ISeriesApi, type CandlestickData, type UTCTimestamp } from 'lightweight-charts';
 import type { Trade } from '../types';
 
 interface Props {
@@ -7,34 +7,36 @@ interface Props {
   trades: Trade[];
 }
 
-function buildCandles(trades: Trade[]): CandlestickData[] {
-  if (trades.length === 0) return [];
+function bucketTime(ms: number): UTCTimestamp {
+  return Math.floor(ms / 300000) * 300 as UTCTimestamp;
+}
 
-  const candleMap = new Map<number, { open: number; high: number; low: number; close: number }>();
-
+function buildCandleMap(trades: Trade[]) {
+  const map = new Map<number, { open: number; high: number; low: number; close: number }>();
   for (const t of trades) {
     const ms = t.createdAt ?? Date.now();
-    const bucket = Math.floor(ms / 300000) * 300;
-
-    const existing = candleMap.get(bucket);
+    const b = bucketTime(ms);
+    const existing = map.get(b);
     if (existing) {
       existing.high = Math.max(existing.high, t.price);
       existing.low = Math.min(existing.low, t.price);
       existing.close = t.price;
     } else {
-      candleMap.set(bucket, { open: t.price, high: t.price, low: t.price, close: t.price });
+      map.set(b, { open: t.price, high: t.price, low: t.price, close: t.price });
     }
   }
+  return map;
+}
 
-  return Array.from(candleMap.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([time, c]) => ({ time: time as Time, ...c }));
+function toCandle(time: UTCTimestamp, c: { open: number; high: number; low: number; close: number }): CandlestickData {
+  return { time, ...c };
 }
 
 export default function Chart({ market, trades }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const lastDataRef = useRef<Map<number, CandlestickData>>(new Map());
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -77,18 +79,20 @@ export default function Chart({ market, trades }: Props) {
 
     seriesRef.current = series;
 
-    const handleResize = () => {
-      if (containerRef.current) {
-        chart.applyOptions({ width: containerRef.current.clientWidth, height: containerRef.current.clientHeight });
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        chart.applyOptions({ width: entry.contentRect.width, height: entry.contentRect.height });
       }
-    };
-    window.addEventListener('resize', handleResize);
+    });
+    ro.observe(containerRef.current);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      ro.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      lastDataRef.current = new Map();
     };
   }, []);
 
@@ -96,11 +100,33 @@ export default function Chart({ market, trades }: Props) {
     const series = seriesRef.current;
     if (!series) return;
 
-    const marketTrades = trades.filter((t) => t.market === market);
-    const candles = buildCandles(marketTrades);
-    if (candles.length === 0) return;
+    const map = buildCandleMap(trades.filter((t) => t.market === market));
+    const last = lastDataRef.current;
 
-    series.setData(candles);
+    const sorted = [...map.entries()].sort(([a], [b]) => a - b);
+
+    if (last.size === 0) {
+      const data = sorted.map(([time, c]) => toCandle(time as UTCTimestamp, c));
+      series.setData(data);
+      for (const d of data) last.set(d.time as number, d);
+      return;
+    }
+
+    for (const [time, c] of sorted) {
+      const candle = toCandle(time as UTCTimestamp, c);
+      const prev = last.get(time);
+      if (!prev) {
+        series.update(candle);
+      } else if (
+        prev.open !== c.open ||
+        prev.high !== c.high ||
+        prev.low !== c.low ||
+        prev.close !== c.close
+      ) {
+        series.update(candle);
+      }
+      last.set(time, candle);
+    }
   }, [trades, market]);
 
   return <div ref={containerRef} className="w-full h-full" />;

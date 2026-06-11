@@ -1,6 +1,13 @@
 import type { Trade } from '../types';
 
-export default function Fills({ trades }: { trades: Trade[] }) {
+interface Props {
+  trades: Trade[];
+  market: string;
+}
+
+export default function Fills({ trades, market }: Props) {
+  const filtered = trades.filter((t) => t.market === market);
+
   return (
     <div className="flex flex-col h-full">
       <div className="grid grid-cols-[1fr_1fr_64px_80px] gap-0 px-3 py-1.5 text-xs text-gray-500 border-b border-dark-600 font-medium">
@@ -10,7 +17,7 @@ export default function Fills({ trades }: { trades: Trade[] }) {
         <span className="text-right">Time</span>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {trades.map((t) => (
+        {filtered.map((t) => (
           <div
             key={t.tradeId}
             className="grid grid-cols-[1fr_1fr_64px_80px] gap-0 px-3 py-1 text-xs border-b border-dark-700/40 hover:bg-dark-600/30"
@@ -29,7 +36,7 @@ export default function Fills({ trades }: { trades: Trade[] }) {
             </span>
           </div>
         ))}
-        {trades.length === 0 && (
+        {filtered.length === 0 && (
           <div className="flex items-center justify-center h-full text-gray-600 text-xs">
             No trades yet
           </div>
