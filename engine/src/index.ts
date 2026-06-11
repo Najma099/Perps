@@ -134,19 +134,24 @@ async function processEntry(
 console.log(`Perps engine listening on: ${env.incomingQueue}`);
 
 for (;;) {
-  const streams = (await brokerClient.xReadGroup(
-    "engine",
-    "worker-1",
-    [{ key: env.incomingQueue, id: ">" }],
-    { COUNT: 1, BLOCK: 2000 },
-  )) as RedisStream[] | null;
+  try {
+    const streams = (await brokerClient.xReadGroup(
+      "engine",
+      "worker-1",
+      [{ key: env.incomingQueue, id: ">" }],
+      { COUNT: 1, BLOCK: 2000 },
+    )) as RedisStream[] | null;
 
-  if (!streams) continue;
+    if (!streams) continue;
 
-  for (const stream of streams) {
-    for (const entry of stream.messages) {
-      await processEntry(entry);
+    for (const stream of streams) {
+      for (const entry of stream.messages) {
+        await processEntry(entry);
+      }
     }
+  } catch (err) {
+    console.error("Engine read error, retrying in 3s:", err);
+    await new Promise((r) => setTimeout(r, 3000));
   }
 }
 

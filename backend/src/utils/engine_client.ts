@@ -78,31 +78,36 @@ export async function listenForEngineResponses(): Promise<void> {
   console.log(`Listening for engine responses on ${env.responseQueue}`);
 
   for (;;) {
-    const raw = (await subscriber.xReadGroup(
-      "backend",
-      "backend-worker-1",
-      [{ key: env.responseQueue, id: ">" }],
-      { COUNT: 10, BLOCK: 2000 },
-    )) as RedisStream[] | null;
+    try {
+      const raw = (await subscriber.xReadGroup(
+        "backend",
+        "backend-worker-1",
+        [{ key: env.responseQueue, id: ">" }],
+        { COUNT: 10, BLOCK: 2000 },
+      )) as RedisStream[] | null;
 
-    if (!raw) continue;
+      if (!raw) continue;
 
-    for (const stream of raw) {
-      for (const entry of stream.messages) {
-        const parsed = parseEngineResponse(entry);
+      for (const stream of raw) {
+        for (const entry of stream.messages) {
+          const parsed = parseEngineResponse(entry);
 
-        if (!parsed.success) {
-          console.error("Invalid engine response", {
-            messageId: entry.id,
-            error: parsed.error,
-          });
+          if (!parsed.success) {
+            console.error("Invalid engine response", {
+              messageId: entry.id,
+              error: parsed.error,
+            });
+            await subscriber.xAck(env.responseQueue, "backend", entry.id);
+            continue;
+          }
+
+          resolveEngineResponse(parsed.data);
           await subscriber.xAck(env.responseQueue, "backend", entry.id);
-          continue;
         }
-
-        resolveEngineResponse(parsed.data);
-        await subscriber.xAck(env.responseQueue, "backend", entry.id);
       }
+    } catch (err) {
+      console.error("Backend response listener error, retrying in 3s:", err);
+      await new Promise((r) => setTimeout(r, 3000));
     }
   }
 }
