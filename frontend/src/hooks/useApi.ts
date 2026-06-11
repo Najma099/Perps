@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
 import { api } from '../lib/api';
-import type { Balance, Position, OrderPayload, Fill } from '../types';
+import type { Balance, Position, Order, OrderPayload, Fill } from '../types';
 
 export function useApi() {
   const [balance, setBalance] = useState<Balance | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [openOrders, setOpenOrders] = useState<Order[]>([]);
   const [fills, setFills] = useState<Fill[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -29,6 +30,13 @@ export function useApi() {
     } catch { /* not authed */ }
   }, []);
 
+  const fetchOpenOrders = useCallback(async (market: string) => {
+    try {
+      const data = await api.getOpenOrders(market);
+      setOpenOrders(data.orders);
+    } catch { /* not authed */ }
+  }, []);
+
   const placeOrder = useCallback(async (order: OrderPayload) => {
     setLoading(true);
     try {
@@ -45,15 +53,23 @@ export function useApi() {
     return res;
   }, []);
 
+  const cancelOrder = useCallback(async (orderId: string) => {
+    await api.cancelOrder(orderId);
+    setOpenOrders((prev) => prev.filter((o) => o.orderId !== orderId));
+  }, []);
+
   return {
     balance,
     positions,
+    openOrders,
     fills,
     loading,
     fetchEquity,
     fetchPositions,
+    fetchOpenOrders,
     fetchFills,
     placeOrder,
+    cancelOrder,
     onramp,
     login: api.signin,
     signup: api.signup,

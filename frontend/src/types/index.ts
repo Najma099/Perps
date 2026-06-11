@@ -70,6 +70,18 @@ export interface Balance {
   total: number;
 }
 
+export interface Order {
+  orderId: string;
+  market: string;
+  side: 'buy' | 'sell';
+  qty: number;
+  price: number;
+  leverage: number;
+  orderType: 'limit' | 'market';
+  status: string;
+  createdAt: string;
+}
+
 export interface Fill {
   fillId: string;
   market: string;

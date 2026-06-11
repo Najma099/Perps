@@ -8,6 +8,7 @@ import OrderBook from './components/OrderBook';
 import Fills from './components/Fills';
 import OrderForm from './components/OrderForm';
 import Positions from './components/Positions';
+import OpenOrders from './components/OpenOrders';
 import AccountSummary from './components/AccountSummary';
 import MarketSelector from './components/MarketSelector';
 import PriceTicker from './components/PriceTicker';
@@ -25,15 +26,16 @@ function AppInner() {
   const { onMessage } = useWebSocket(market);
   const orderBook = useOrderBook();
   const { trades, addTrade, loadSnapshot } = useTrades();
-  const { balance, positions, fills, fetchEquity, fetchPositions, fetchFills, placeOrder, onramp } = useApi();
+  const { balance, positions, openOrders, fills, fetchEquity, fetchPositions, fetchOpenOrders, fetchFills, placeOrder, cancelOrder, onramp } = useApi();
   const { toast } = useToast();
 
   const handleAuth = useCallback(() => {
     setShowAuth(false);
     fetchEquity();
     fetchPositions(market);
+    fetchOpenOrders(market);
     fetchFills(market);
-  }, [fetchEquity, fetchPositions, fetchFills, market]);
+  }, [fetchEquity, fetchPositions, fetchOpenOrders, fetchFills, market]);
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
@@ -45,8 +47,9 @@ function AppInner() {
     if (!localStorage.getItem('token')) return;
     fetchEquity();
     fetchPositions(market);
+    fetchOpenOrders(market);
     fetchFills(market);
-  }, [market, fetchEquity, fetchPositions, fetchFills]);
+  }, [market, fetchEquity, fetchPositions, fetchOpenOrders, fetchFills]);
 
   useEffect(() => {
     onMessage((msg) => {
@@ -65,6 +68,7 @@ function AppInner() {
         'success',
       );
       setTimeout(() => fetchPositions(market), 500);
+      setTimeout(() => fetchOpenOrders(market), 500);
       setTimeout(() => fetchEquity(), 500);
     } catch (err: any) {
       toast(err.message, 'error');
@@ -142,16 +146,19 @@ function AppInner() {
           </div>
         </div>
 
-        {/* Right Column: Order Form + Positions */}
+        {/* Right Column: Order Form + Open Orders + Positions */}
         <div className="border-l border-dark-600 flex flex-col bg-dark-800 overflow-hidden">
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-shrink-0">
             <OrderForm
               market={market}
               balance={balance}
               onPlaceOrder={handlePlaceOrder}
             />
           </div>
-          <div className="h-[220px] border-t border-dark-600 flex-shrink-0">
+          <div className="flex-1 min-h-0 border-t border-dark-600 overflow-hidden">
+            <OpenOrders orders={openOrders} onCancel={(id) => cancelOrder(id)} />
+          </div>
+          <div className="h-[180px] border-t border-dark-600 flex-shrink-0">
             <Positions positions={positions} />
           </div>
         </div>

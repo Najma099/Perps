@@ -10,23 +10,23 @@ interface Props {
 function buildCandles(trades: Trade[]): CandlestickData[] {
   if (trades.length === 0) return [];
 
-  const minuteMap = new Map<number, { open: number; high: number; low: number; close: number }>();
+  const candleMap = new Map<number, { open: number; high: number; low: number; close: number }>();
 
   for (const t of trades) {
     const ms = t.createdAt ?? Date.now();
-    const minute = Math.floor(ms / 60000) * 60;
+    const bucket = Math.floor(ms / 300000) * 300;
 
-    const existing = minuteMap.get(minute);
+    const existing = candleMap.get(bucket);
     if (existing) {
       existing.high = Math.max(existing.high, t.price);
       existing.low = Math.min(existing.low, t.price);
       existing.close = t.price;
     } else {
-      minuteMap.set(minute, { open: t.price, high: t.price, low: t.price, close: t.price });
+      candleMap.set(bucket, { open: t.price, high: t.price, low: t.price, close: t.price });
     }
   }
 
-  return Array.from(minuteMap.entries())
+  return Array.from(candleMap.entries())
     .sort(([a], [b]) => a - b)
     .map(([time, c]) => ({ time: time as Time, ...c }));
 }
