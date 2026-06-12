@@ -12,8 +12,26 @@ import {
   type PositionType,
 } from "../store/perp-store";
 
+async function connectWithRetry(maxRetries = 5, delayMs = 2000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await prisma.$connect();
+      return;
+    } catch (err) {
+      if (i < maxRetries - 1) {
+        console.warn(`DB connection attempt ${i + 1}/${maxRetries} failed, retrying in ${delayMs}ms`);
+        await new Promise((r) => setTimeout(r, delayMs));
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
 export async function hydrateEngine() {
   try {
+    await connectWithRetry();
+
     const balances = await prisma.balance.findMany();
     for (const b of balances) {
       BALANCES.set(b.userId, {
@@ -95,8 +113,7 @@ export async function hydrateEngine() {
     }
     console.log(`Hydrated ${openPositions.length} open positions`);
   } catch (err) {
-    console.warn(
-      "DB unavailable - starting with empty state (hydrate skipped)",
-    );
+    console.warn(err);
+    console.warn("DB unavailable - starting with empty state (hydrate skipped)");
   }
 }
