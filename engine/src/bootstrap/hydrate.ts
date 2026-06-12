@@ -41,11 +41,36 @@ export async function hydrateEngine() {
     }
     console.log(`Hydrated ${balances.length} balances`);
 
+    const staleOrders = await prisma.order.findMany({
+      where: {
+        market: "BTCUSDT",
+        status: { in: ["open", "partially_filled"] },
+        OR: [{ price: { gt: 70000 } }, { price: { lt: 50000 } }],
+      },
+    });
+    if (staleOrders.length > 0) {
+      await prisma.order.updateMany({
+        where: { orderId: { in: staleOrders.map((o) => o.orderId) } },
+        data: { status: "cancelled" },
+      });
+      console.log(`Marked ${staleOrders.length} stale orders as cancelled`);
+    }
+
     const openOrders = await prisma.order.findMany({
-      where: { status: { in: ["open", "partially_filled"] } },
+      where: {
+        status: { in: ["open", "partially_filled"] },
+        market: "BTCUSDT",
+        price: { gte: 50000, lte: 70000 },
+      },
     });
 
     for (const order of openOrders) {
+      if (!BALANCES.has(order.userId)) {
+        BALANCES.set(order.userId, {
+          available: 100000,
+          locked: 0,
+        });
+      }
       if (!ORDERS.has(order.userId)) ORDERS.set(order.userId, []);
       ORDERS.get(order.userId)!.push({
         orderId: order.orderId,

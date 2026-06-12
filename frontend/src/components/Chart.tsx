@@ -182,9 +182,6 @@ export default function Chart({ market, trades }: Props) {
           .sort(([a], [b]) => a - b)
           .map(([, c]) => c);
         series.setData(sorted);
-        if (chartRef.current) {
-          showRecentBars(chartRef.current, last.size);
-        }
       } catch (err) {
         console.error('Chart update failed:', err);
       }

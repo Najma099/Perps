@@ -18,9 +18,9 @@ export default function AccountSummary({ balance, onSignOut, onOpenDeposit, onOp
         <div className="text-right">
           <div className="text-xs text-gray-500">Total Equity</div>
           <div className="font-mono font-semibold text-white">
-            ${balance.total.toFixed(2)}
-            <span className={`ml-1.5 text-xs ${balance.unrealized >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {balance.unrealized >= 0 ? '+' : ''}{balance.unrealized.toFixed(2)}
+            ${(balance.total ?? (balance.available + balance.locked)).toFixed(2)}
+            <span className={`ml-1.5 text-xs ${(balance.unrealized ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {(balance.unrealized ?? 0) >= 0 ? '+' : ''}{(balance.unrealized ?? 0).toFixed(2)}
             </span>
           </div>
         </div>

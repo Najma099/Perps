@@ -2,7 +2,7 @@ import "dotenv/config";
 import { createClient } from "redis";
 import { env } from "./utils/config.js";
 import { hydrateEngine } from "./bootstrap/hydrate.js";
-import startBinanceWs from "./ws/binance.js";
+import startBinanceWs, { initializeMarkPrice } from "./ws/binance.js";
 import {
   onramp,
   getEquity,
@@ -51,6 +51,7 @@ try {
   console.log("Consumer group already exists, continuing");
 }
 
+await initializeMarkPrice("BTCUSDT");
 startBinanceWs();
 
 async function sendResponse(

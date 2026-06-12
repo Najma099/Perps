@@ -14,13 +14,39 @@ function levelsToArray(levels: Map<number, number>, side: 'bids' | 'asks'): Dept
   });
 }
 
+function computeSpread(bids: DepthLevel[], asks: DepthLevel[]): number {
+  if (bids.length === 0 || asks.length === 0) return 0;
+  return asks[0].price - bids[0].price;
+}
+
 export function useOrderBook() {
   const [bids, setBids] = useState<DepthLevel[]>([]);
   const [asks, setAsks] = useState<DepthLevel[]>([]);
   const [flashedPrices, setFlashedPrices] = useState<Set<number>>(new Set());
   const bookRef = useRef({ bids: new Map<number, number>(), asks: new Map<number, number>() });
-  const prevBidsRef = useRef(new Map<number, number>());
-  const prevAsksRef = useRef(new Map<number, number>());
+  const updateQueued = useRef(false);
+
+  function flushState() {
+    updateQueued.current = false;
+    const book = bookRef.current;
+    const rawBids = levelsToArray(book.bids, 'bids').slice(0, 20);
+    const rawAsks = levelsToArray(book.asks, 'asks').slice(0, 20);
+
+    if (computeSpread(rawBids, rawAsks) < 0) {
+      setBids(levelsToArray(book.asks, 'bids').slice(0, 20));
+      setAsks(levelsToArray(book.bids, 'asks').slice(0, 20));
+    } else {
+      setBids(rawBids);
+      setAsks(rawAsks);
+    }
+  }
+
+  function scheduleUpdate() {
+    if (!updateQueued.current) {
+      updateQueued.current = true;
+      requestAnimationFrame(flushState);
+    }
+  }
 
   const applySnapshot = useCallback((msg: OrderbookSnapshot) => {
     const bids = new Map<number, number>();
@@ -28,10 +54,7 @@ export function useOrderBook() {
     for (const [p, q] of msg.bids) if (q > 0) bids.set(p, q);
     for (const [p, q] of msg.asks) if (q > 0) asks.set(p, q);
     bookRef.current = { bids, asks };
-    prevBidsRef.current = new Map(bids);
-    prevAsksRef.current = new Map(asks);
-    setBids(levelsToArray(bids, 'bids').slice(0, 20));
-    setAsks(levelsToArray(asks, 'asks').slice(0, 20));
+    scheduleUpdate();
   }, []);
 
   const applyDepthUpdate = useCallback((msg: DepthUpdate) => {
@@ -52,8 +75,7 @@ export function useOrderBook() {
     setFlashedPrices(flashed);
     setTimeout(() => setFlashedPrices(new Set()), 300);
 
-    setBids(levelsToArray(book.bids, 'bids').slice(0, 20));
-    setAsks(levelsToArray(book.asks, 'asks').slice(0, 20));
+    scheduleUpdate();
   }, []);
 
   const maxBidTotal = bids.length > 0 ? bids[bids.length - 1].total : 1;
@@ -65,7 +87,7 @@ export function useOrderBook() {
     maxBidTotal,
     maxAskTotal,
     flashedPrices,
-    spread: asks.length > 0 && bids.length > 0 ? asks[0].price - bids[0].price : 0,
+    spread: computeSpread(bids, asks),
     applySnapshot,
     applyDepthUpdate,
   };

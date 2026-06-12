@@ -61,7 +61,7 @@ export default function OrderBook({ bids, asks, spread, maxBidTotal, maxAskTotal
       <div className="flex items-center justify-center gap-2 py-1.5 border-y border-dark-600 text-sm font-mono bg-dark-700/50">
         <span className="text-green-500 font-semibold">{bids[0]?.price.toFixed(2) ?? '-'}</span>
         <span className="text-gray-500 text-xs">
-          Spread <span className="font-semibold text-gray-400">{spread.toFixed(2)}</span>
+          Spread <span className="font-semibold text-yellow-400">{spread.toFixed(2)}</span>
         </span>
         <span className="text-red-500 font-semibold">{asks[0]?.price.toFixed(2) ?? '-'}</span>
       </div>

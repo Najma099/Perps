@@ -89,7 +89,7 @@ export const onramp = async (payload: Record<string, unknown>) => {
     balance: BALANCES.get(userId),
   });
 
-  return BALANCES.get(userId);
+  return getEquity({ userId });
 };
 
 export const getEquity = (payload: Record<string, unknown>) => {
@@ -467,9 +467,10 @@ export const matchOrder = async (
       if (level.length === 0) opposite.delete(bestPrice);
     }
 
-    const makerBalance = BALANCES.get(resting.userId);
+    let makerBalance = BALANCES.get(resting.userId);
     if (makerBalance === undefined) {
-      throw new Error(`Balance not found for maker ${resting.userId}`);
+      BALANCES.set(resting.userId, { available: 100000, locked: 0 });
+      makerBalance = BALANCES.get(resting.userId)!;
     }
     makerBalance.locked -= (fillQty / origQty) * origMargin;
 

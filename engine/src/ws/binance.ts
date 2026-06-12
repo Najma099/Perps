@@ -8,6 +8,22 @@ type BINANCE_RAW_DATA = {
   p: string;
 };
 
+export async function initializeMarkPrice(market: string) {
+  try {
+    const res = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${market}`);
+    if (res.ok) {
+      const data = (await res.json()) as { price: string };
+      const price = parseFloat(data.price);
+      if (price > 0) {
+        MARK_PRICE.set(market, price);
+        console.log(`[engine] Initialized mark price for ${market} to ${price}`);
+      }
+    }
+  } catch (err: any) {
+    console.error(`[engine] Failed to fetch initial mark price for ${market}:`, err.message);
+  }
+}
+
 export default function LiveDataFetch() {
   const url = "wss://fstream.binance.com/ws";
   const connection = new WebSocket(url);
