@@ -9,16 +9,28 @@ export const onrampSchema = z.object({
     amount: z.coerce.number().positive(),
 });
 
-export const openPositionSchema = z.object({
-  userId: z.string(),
-  market: z.string(),
-  side: orderSideSchema,
-  positionType: positionTypeSchema,
-  qty: z.number().positive(),
-  leverage: z.number().positive(),
-  orderType: orderTypeSchema,
-  price: z.number().positive(),
-});
+export const openPositionSchema = z.discriminatedUnion("orderType", [
+  z.object({
+    userId: z.string(),
+    market: z.string(),
+    side: orderSideSchema,
+    positionType: positionTypeSchema,
+    qty: z.number().positive(),
+    leverage: z.number().positive(),
+    orderType: z.literal("market"),
+    price: z.number().positive().optional(),
+  }),
+  z.object({
+    userId: z.string(),
+    market: z.string(),
+    side: orderSideSchema,
+    positionType: positionTypeSchema,
+    qty: z.number().positive(),
+    leverage: z.number().positive(),
+    orderType: z.literal("limit"),
+    price: z.number().positive(),
+  }),
+]);
 
 export const cancelPositionSchema = z.object({
   userId: z.string(),
