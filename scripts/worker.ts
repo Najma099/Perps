@@ -102,17 +102,17 @@ async function main() {
       }
 
       await sendOrder(redis, "buy", "limit");
-      await sleep(rand(400, 800));
+      await sleep(rand(100, 250));
       await sendOrder(redis, "sell", "limit");
+      await sleep(rand(100, 250));
 
-      if (Math.random() < 0.2) {
-        await sleep(rand(600, 1200));
+      if (Math.random() < 0.35) {
         const side = Math.random() < 0.5 ? "buy" : "sell";
         await sendOrder(redis, side, "market");
       }
 
       count += 2;
-      await sleep(rand(1000, 2500));
+      await sleep(rand(300, 800));
     } catch (err) {
       console.error("[worker] Error:", err);
       await sleep(3000);

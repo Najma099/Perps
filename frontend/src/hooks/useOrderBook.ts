@@ -32,13 +32,8 @@ export function useOrderBook() {
     const rawBids = levelsToArray(book.bids, 'bids').slice(0, 20);
     const rawAsks = levelsToArray(book.asks, 'asks').slice(0, 20);
 
-    if (computeSpread(rawBids, rawAsks) < 0) {
-      setBids(levelsToArray(book.asks, 'bids').slice(0, 20));
-      setAsks(levelsToArray(book.bids, 'asks').slice(0, 20));
-    } else {
-      setBids(rawBids);
-      setAsks(rawAsks);
-    }
+    setBids(rawBids);
+    setAsks(rawAsks);
   }
 
   function scheduleUpdate() {
