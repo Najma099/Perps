@@ -153,6 +153,7 @@ export default function Chart({ market, trades }: Props) {
     const last = lastDataRef.current;
     const seen = seenTradeIdsRef.current;
 
+    let hasChanges = false;
     for (const t of trades) {
       if (t.market !== market) continue;
       if (seen.has(t.tradeId)) continue;
@@ -163,19 +164,29 @@ export default function Chart({ market, trades }: Props) {
       const prev = last.get(bucket);
       const candle = mergeTradeIntoCandle(prev, t.price, time);
 
-      const isNewBucket = !prev;
+      last.set(bucket, candle);
       if (
-        isNewBucket ||
+        !prev ||
         prev.open !== candle.open ||
         prev.high !== candle.high ||
         prev.low !== candle.low ||
         prev.close !== candle.close
       ) {
-        series.update(candle);
-        last.set(bucket, candle);
-        if (isNewBucket && chartRef.current) {
+        hasChanges = true;
+      }
+    }
+
+    if (hasChanges) {
+      try {
+        const sorted = Array.from(last.entries())
+          .sort(([a], [b]) => a - b)
+          .map(([, c]) => c);
+        series.setData(sorted);
+        if (chartRef.current) {
           showRecentBars(chartRef.current, last.size);
         }
+      } catch (err) {
+        console.error('Chart update failed:', err);
       }
     }
   }, [trades, market, loaded]);
