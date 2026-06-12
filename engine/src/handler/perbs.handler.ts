@@ -133,8 +133,10 @@ export const openPosition = async (payload: Record<string, unknown>, correlation
   const qty = payload.qty as number;
   const leverage = payload.leverage as number;
   const orderType = payload.orderType as OrderType;
-  const price = payload.price as number;
   const positionType = payload.positionType as PositionType;
+  const price = orderType === "market"
+    ? (MARK_PRICE.get(market) ?? 0)
+    : (payload.price as number);
 
   seedUserIfNeeded(userId);
   const userBalance = BALANCES.get(userId)!;
@@ -352,10 +354,12 @@ export const cancelPosition = async (payload: Record<string, unknown>) => {
     status: "cancelled",
   });
 
-  await emitEvent("BALANCE_UPDATED", {
-    userId,
-    balance: BALANCES.get(userId),
-  });
+  if (userBalance) {
+    await emitEvent("BALANCE_UPDATED", {
+      userId,
+      balance: userBalance,
+    });
+  }
 
 
   return { orderId, status: "cancelled" };
@@ -486,7 +490,7 @@ export const matchOrder = async (
       market,
       type: positionType,
       qty: fillQty,
-      margin: tMargin,
+      margin: isFinite(tMargin) ? tMargin : (fillQty * fillPrice) / leverage,
       leverage,                 
       unrealizedPnl: 0,
       realizedPnl: 0,
@@ -498,7 +502,8 @@ export const matchOrder = async (
 
     const mType: PositionType = positionType === "long" ? "short" : "long";
     const mMargin = (fillQty / origQty) * origMargin;
-    const mLev = (origQty * fillPrice) / origMargin;
+    const safeMargin = isFinite(mMargin) ? mMargin : (fillQty * fillPrice) / leverage;
+    const mLev = origMargin > 0 ? (origQty * fillPrice) / origMargin : leverage;
     const mLiqPrice =
       mType === "long"
         ? fillPrice * (1 - 1 / mLev + MM)
@@ -510,7 +515,7 @@ export const matchOrder = async (
       market,
       type: mType,
       qty: fillQty,
-      margin: mMargin,
+      margin: safeMargin,
       leverage: mLev,           
       unrealizedPnl: 0,
       realizedPnl: 0,
