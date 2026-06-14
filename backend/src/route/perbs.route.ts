@@ -214,8 +214,8 @@ router.get(
         res.json({ candles });
         return;
       }
-    } catch {
-      // fall through to Redis-backed candles
+    } catch (err) {
+      console.error("Binance candle fetch failed, falling back to Redis:", err);
     }
 
     const raw = await publisher.xRevRange("stream:events", "+", "-", { COUNT: 10000 });

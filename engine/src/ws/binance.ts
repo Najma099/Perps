@@ -39,14 +39,18 @@ export default function LiveDataFetch() {
   });
 
   connection.on("message", async (rawMessage) => {
-    const messageString = rawMessage.toString("utf-8");
-    const parsedData: BINANCE_RAW_DATA[] = JSON.parse(messageString);
+    try {
+      const messageString = rawMessage.toString("utf-8");
+      const parsedData: BINANCE_RAW_DATA[] = JSON.parse(messageString);
 
-    if (!Array.isArray(parsedData)) return;
+      if (!Array.isArray(parsedData)) return;
 
-    for (const data of parsedData) {
-      MARK_PRICE.set(data.s, parseFloat(data.p));
-      await updateMarkPrice(data.s, parseFloat(data.p));
+      for (const data of parsedData) {
+        MARK_PRICE.set(data.s, parseFloat(data.p));
+        await updateMarkPrice(data.s, parseFloat(data.p));
+      }
+    } catch (err) {
+      console.error("Binance WS message processing error:", err);
     }
   });
 

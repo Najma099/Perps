@@ -16,8 +16,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.get("/health", async (_req, res) => {
-  await pingRedis();
-  res.json({ ok: true });
+  try {
+    await pingRedis();
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Health check failed:", err);
+    res.status(503).json({ ok: false, error: "redis_unavailable" });
+  }
 });
 
 app.use(appRouter);

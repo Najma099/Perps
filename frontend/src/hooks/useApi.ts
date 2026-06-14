@@ -13,28 +13,36 @@ export function useApi() {
     try {
       const data = await api.getEquity();
       setBalance(data);
-    } catch { /* not authed */ }
+    } catch (err) {
+      console.error("fetchEquity failed:", err);
+    }
   }, []);
 
   const fetchPositions = useCallback(async (market: string) => {
     try {
       const data = await api.getOpenPositions(market);
       setPositions(data.positions);
-    } catch { /* not authed */ }
+    } catch (err) {
+      console.error("fetchPositions failed:", err);
+    }
   }, []);
 
   const fetchFills = useCallback(async (market?: string) => {
     try {
       const data = await api.getFills(market);
       setFills(data.fills);
-    } catch { /* not authed */ }
+    } catch (err) {
+      console.error("fetchFills failed:", err);
+    }
   }, []);
 
   const fetchOpenOrders = useCallback(async (market: string) => {
     try {
       const data = await api.getOpenOrders(market);
       setOpenOrders(data.orders);
-    } catch { /* not authed */ }
+    } catch (err) {
+      console.error("fetchOpenOrders failed:", err);
+    }
   }, []);
 
   const placeOrder = useCallback(async (order: OrderPayload) => {

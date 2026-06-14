@@ -138,7 +138,7 @@ export async function hydrateEngine() {
     }
     console.log(`Hydrated ${openPositions.length} open positions`);
   } catch (err) {
-    console.warn(err);
+    console.error("Hydration failed:", err);
     console.warn("DB unavailable - starting with empty state (hydrate skipped)");
   }
 }

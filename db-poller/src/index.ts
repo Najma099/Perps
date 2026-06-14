@@ -25,19 +25,35 @@ try {
 console.log(`DB poller listening on ${EVENTS_QUEUE}...`);
 
 for (;;) {
-  const raw = (await eventClient.xReadGroup(
-    "db-writers",
-    "db-writer-1",
-    [{ key: EVENTS_QUEUE, id: ">" }],
-    { COUNT: 10, BLOCK: 2000 },
-  )) as RedisStream[] | null;
+  try {
+    const raw = (await eventClient.xReadGroup(
+      "db-writers",
+      "db-writer-1",
+      [{ key: EVENTS_QUEUE, id: ">" }],
+      { COUNT: 10, BLOCK: 2000 },
+    )) as RedisStream[] | null;
 
-  if (!raw) continue;
+    if (!raw) continue;
 
-  for (const stream of raw) {
-    for (const entry of stream.messages) {
-      await processEvent(entry, eventClient as any, EVENTS_QUEUE);
+    for (const stream of raw) {
+      for (const entry of stream.messages) {
+        await processEvent(entry, eventClient as any, EVENTS_QUEUE);
+      }
     }
+  } catch (err) {
+    console.error("DB poller read error:", err);
+    if (String(err).includes("NOGROUP")) {
+      try {
+        await eventClient.xGroupCreate(EVENTS_QUEUE, "db-writers", "$", {
+          MKSTREAM: true,
+        });
+        console.log("Recreated db-writers consumer group");
+      } catch (e: any) {
+        if (!String(e).includes("BUSYGROUP"))
+          console.error("Failed to recreate group:", e);
+      }
+    }
+    await new Promise((r) => setTimeout(r, 3000));
   }
 }
 

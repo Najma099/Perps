@@ -24,7 +24,9 @@ export function useWebSocket(market: string) {
       try {
         const msg: WSMessage = JSON.parse(event.data);
         cbRef.current?.(msg);
-      } catch { /* ignore parse errors */ }
+      } catch (err) {
+        console.error("WebSocket message parse error:", err);
+      }
     };
 
     ws.onclose = () => {

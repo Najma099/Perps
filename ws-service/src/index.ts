@@ -226,19 +226,39 @@ async function processEvent(entry: {
 
 console.log("Listening for events on stream:events");
 for (;;) {
-  const raw = (await eventClient.xReadGroup(
-    "ws-service",
-    "ws-worker-1",
-    [{ key: "stream:events", id: ">" }],
-    { COUNT: 10, BLOCK: 2000 },
-  )) as any;
+  try {
+    const raw = (await eventClient.xReadGroup(
+      "ws-service",
+      "ws-worker-1",
+      [{ key: "stream:events", id: ">" }],
+      { COUNT: 10, BLOCK: 2000 },
+    )) as any;
 
-  if (!raw) continue;
+    if (!raw) continue;
 
-  for (const stream of raw) {
-    for (const entry of stream.messages) {
-      await processEvent(entry);
-      await eventClient.xAck("stream:events", "ws-service", entry.id);
+    for (const stream of raw) {
+      for (const entry of stream.messages) {
+        try {
+          await processEvent(entry);
+        } catch (err) {
+          console.error("Failed to process event:", { id: entry.id, err });
+        }
+        await eventClient.xAck("stream:events", "ws-service", entry.id);
+      }
     }
+  } catch (err) {
+    console.error("WS event loop error:", err);
+    if (String(err).includes("NOGROUP")) {
+      try {
+        await eventClient.xGroupCreate("stream:events", "ws-service", "$", {
+          MKSTREAM: true,
+        });
+        console.log("Recreated ws-service consumer group");
+      } catch (e: any) {
+        if (!String(e).includes("BUSYGROUP"))
+          console.error("Failed to recreate group:", e);
+      }
+    }
+    await new Promise((r) => setTimeout(r, 3000));
   }
 }
