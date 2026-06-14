@@ -1,3 +1,5 @@
+export type { EngineRequest, EngineResponse } from "@repo/redis-utils";
+
 export type EngineCommandType =
   | "onramp"
   | "open_position"
@@ -8,18 +10,3 @@ export type EngineCommandType =
   | "get_open_orders"
   | "get_all_orders"
   | "get_fills"
-
-
-export interface EngineRequest {
-  correlationId: string;
-  responseQueue: string;
-  type: EngineCommandType;
-  payload: Record<string, unknown>;
-}
-
-export interface EngineResponse {
-  correlationId: string;
-  ok: boolean;
-  data?: unknown;
-  error?: string;
-}

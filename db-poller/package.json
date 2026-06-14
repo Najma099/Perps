@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@repo/db": "../shared/db",
+    "@repo/redis-utils": "../shared/redis-utils",
     "redis": "^5.12.1",
     "dotenv": "^17.4.2"
   }

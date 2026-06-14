@@ -1,10 +1,5 @@
 import "dotenv/config";
-
-function readRequiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required env variable: ${name}`);
-  return value;
-}
+import { readRequiredEnv } from "@repo/redis-utils";
 
 export const env = {
   redisUrl: readRequiredEnv("REDIS_URL"),

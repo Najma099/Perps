@@ -1,13 +1,5 @@
 import { prisma } from "@repo/db";
-
-async function ensureUser(userId: string) {
-  const exists = await prisma.user.findUnique({ where: { userId }, select: { userId: true } });
-  if (!exists) {
-    await prisma.user.create({
-      data: { userId, username: `usr-${userId}`, password: "" },
-    });
-  }
-}
+import { ensureUser } from "./ensure-user.js";
 
 export async function upsertBalance(data: {
   userId: string;

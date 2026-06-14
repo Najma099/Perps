@@ -1,19 +1,11 @@
 import { prisma } from "@repo/db";
+import { ensureUser } from "./ensure-user.js";
 
 import type {
   OrderSide,
   OrderType,
   OrderStatus,
 } from "@repo/db/prisma/generated/prisma/enums";
-
-async function ensureUser(userId: string) {
-  const exists = await prisma.user.findUnique({ where: { userId }, select: { userId: true } });
-  if (!exists) {
-    await prisma.user.create({
-      data: { userId, username: `usr-${userId}`, password: "" },
-    });
-  }
-}
 
 export async function createOrder(data: {
   orderId: string;

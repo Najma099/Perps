@@ -1,10 +1,14 @@
 import "dotenv/config";
-import { createClient } from "redis";
+import { createClient, type RedisClientType } from "redis";
 import { processEvent } from "./consumers/eventConsumer.js";
-import type { RedisStream } from "./types/redisMessage.js";
+import {
+  readRequiredEnv,
+  ensureConsumerGroup,
+  type RedisStream,
+} from "@repo/redis-utils";
 
-const REDIS_URL = process.env.REDIS_URL!;
-const EVENTS_QUEUE = process.env.EVENTS_QUEUE!;
+const REDIS_URL = readRequiredEnv("REDIS_URL");
+const EVENTS_QUEUE = readRequiredEnv("EVENTS_QUEUE");
 
 const eventClient = createClient({ url: REDIS_URL }).on("error", (err) =>
   console.error("eventClient error", err),
@@ -12,15 +16,12 @@ const eventClient = createClient({ url: REDIS_URL }).on("error", (err) =>
 
 await eventClient.connect();
 
-try {
-  await eventClient.xGroupCreate(EVENTS_QUEUE, "db-writers", "$", {
-    MKSTREAM: true,
-  });
-  console.log("db-writers consumer group created");
-} catch (err: any) {
-  if (!err.message.includes("BUSYGROUP")) throw err;
-  console.log("db-writers consumer group already exists");
-}
+await ensureConsumerGroup(
+  eventClient as unknown as RedisClientType,
+  EVENTS_QUEUE,
+  "db-writers",
+);
+console.log("db-writers consumer group ready");
 
 console.log(`DB poller listening on ${EVENTS_QUEUE}...`);
 

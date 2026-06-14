@@ -1,7 +1,8 @@
 import "dotenv/config";
-import { createClient } from "redis";
+import { createClient, type RedisClientType } from "redis";
 import { WebSocketServer, WebSocket } from "ws";
 import { env } from "./config";
+import { ensureConsumerGroup } from "@repo/redis-utils";
 
 interface DepthLevel {
   bids: Map<number, number>;
@@ -23,13 +24,11 @@ const eventClient = createClient({ url: env.redisUrl }).on(
 
 await eventClient.connect();
 
-try {
-  await eventClient.xGroupCreate("stream:events", "ws-service", "$", {
-    MKSTREAM: true,
-  });
-} catch (err: any) {
-  if (!err.message.includes("BUSYGROUP")) throw err;
-}
+await ensureConsumerGroup(
+  eventClient as unknown as RedisClientType,
+  "stream:events",
+  "ws-service",
+);
 
 function isPublicMarketTrade(payload: Record<string, unknown>): boolean {
   if (payload.source === "market") return true;

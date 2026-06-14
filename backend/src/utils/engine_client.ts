@@ -1,33 +1,18 @@
-import { createClient } from "redis";
+import { createClient, type RedisClientType } from "redis";
 import { env } from "../config.js";
 import {
   resolveEngineResponse,
   waitForEngineResponse,
 } from "../store/pending_response.js";
 import { parseEngineResponse } from "./redisMessageParser.js";
-import type { RedisStream } from "../types/redisMessage.js";
+import {
+  ensureConsumerGroup,
+  type RedisStream,
+  type EngineResponse,
+} from "@repo/redis-utils";
+import type { EngineCommandType } from "../types/engine.js";
 
-export interface EngineRequest {
-  correlationId: string;
-  responseQueue: string;
-  type: string;
-  payload: Record<string, unknown>;
-}
-
-export interface EngineResponse {
-  correlationId: string;
-  ok: boolean;
-  data?: unknown;
-  error?: string;
-}
-
-export type EngineCommandType =
-  | "onramp"
-  | "get_equity"
-  | "get_open_positions"
-  | "get_closed_positions"
-  | "open_position"
-  | "cancel_position";
+export type { EngineResponse };
 
 const publisher = createClient({ url: env.redisUrl }).on("error", (error) => {
   console.error("Redis publisher error", error);
@@ -41,15 +26,12 @@ const subscriber = createClient({ url: env.redisUrl }).on("error", (error) => {
 
 export async function connectRedis(): Promise<void> {
   await Promise.all([publisher.connect(), subscriber.connect()]);
-  try {
-    await subscriber.xGroupCreate(env.responseQueue, "backend", "$", {
-      MKSTREAM: true,
-    });
-    console.log("Response consumer group created");
-  } catch (err: any) {
-    if (!err.message.includes("BUSYGROUP")) throw err;
-    console.log("Response consumer group already exists, continuing");
-  }
+  await ensureConsumerGroup(
+    subscriber as unknown as RedisClientType,
+    env.responseQueue,
+    "backend",
+  );
+  console.log("Response consumer group ready");
 }
 
 export async function pingRedis(): Promise<string> {
@@ -110,12 +92,12 @@ export async function listenForEngineResponses(): Promise<void> {
     } catch (err) {
       console.error("Backend response listener error:", err);
       if (String(err).includes("NOGROUP")) {
-        try {
-          await subscriber.xGroupCreate(env.responseQueue, "backend", "$", { MKSTREAM: true });
-          console.log("Recreated response consumer group");
-        } catch (e: any) {
-          if (!String(e).includes("BUSYGROUP")) console.error("Failed to recreate group:", e);
-        }
+        await ensureConsumerGroup(
+          subscriber as unknown as RedisClientType,
+          env.responseQueue,
+          "backend",
+        );
+        console.log("Recreated response consumer group");
       }
       await new Promise((r) => setTimeout(r, 3000));
     }

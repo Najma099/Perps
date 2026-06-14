@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@repo/db": "../shared/db",
+    "@repo/redis-utils": "../shared/redis-utils",
     "@repo/db-poller": "../db-poller",
     "@types/ws": "^8.18.1",
     "db-poller": "../db-poller",

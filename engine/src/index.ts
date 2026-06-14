@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { createClient } from "redis";
+import { createClient, type RedisClientType } from "redis";
 import { env } from "./utils/config.js";
 import { hydrateEngine } from "./bootstrap/hydrate.js";
 import startBinanceWs, { initializeMarkPrice } from "./ws/binance.js";
@@ -13,21 +13,14 @@ import {
   getOrderbookSnapshot,
 } from "./handler/perbs.handler.js";
 import { parseEngineRequest } from "./utils/redisMessagePaser.js";
-import type { RedisStream } from "./types/redisMessage.js";
+import {
+  ensureConsumerGroup,
+  type RedisStream,
+  type EngineRequest,
+  type EngineResponse,
+} from "@repo/redis-utils";
 
-export interface EngineRequest {
-  correlationId: string;
-  responseQueue: string;
-  type: string;
-  payload: Record<string, unknown>;
-}
-
-export interface EngineResponse {
-  correlationId: string;
-  ok: boolean;
-  data?: unknown;
-  error?: string;
-}
+export type { EngineRequest, EngineResponse };
 
 const brokerClient = createClient({ url: env.redisUrl }).on("error", (err) =>
   console.error("broker error", err),
@@ -41,15 +34,13 @@ await Promise.all([brokerClient.connect(), responseClient.connect()]);
 
 await hydrateEngine();
 
-try {
-  await brokerClient.xGroupCreate(env.incomingQueue, "engine", "0", {
-    MKSTREAM: true,
-  });
-  console.log("Consumer group created");
-} catch (err: any) {
-  if (!err.message.includes("BUSYGROUP")) throw err;
-  console.log("Consumer group already exists, continuing");
-}
+await ensureConsumerGroup(
+  brokerClient as unknown as RedisClientType,
+  env.incomingQueue,
+  "engine",
+  "0",
+);
+console.log("Engine consumer group ready");
 
 await initializeMarkPrice("BTCUSDT");
 startBinanceWs();
@@ -153,17 +144,14 @@ for (;;) {
   } catch (err) {
     console.error("Engine read error:", err);
     if (String(err).includes("NOGROUP")) {
-      try {
-        await brokerClient.xGroupCreate(env.incomingQueue, "engine", "0", {
-          MKSTREAM: true,
-        });
-        console.log("Recreated engine consumer group");
-      } catch (e: any) {
-        if (!String(e).includes("BUSYGROUP")) console.error("Failed to recreate group:", e);
-      }
+      await ensureConsumerGroup(
+        brokerClient as unknown as RedisClientType,
+        env.incomingQueue,
+        "engine",
+        "0",
+      );
+      console.log("Recreated engine consumer group");
     }
     await new Promise((r) => setTimeout(r, 3000));
   }
 }
-
-
