@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { createClient } from "redis";
 import { prisma } from "@repo/db";
+import bcrypt from "bcrypt";
 
 const MARKET = "BTCUSDT";
 const BASE_PRICE = 45000;
@@ -31,10 +32,11 @@ async function main() {
       createdUsers.push({ userId: existing.userId, username: existing.username });
       continue;
     }
+    const hashedPassword = await bcrypt.hash(u.password, 10);
     const user = await prisma.user.create({
       data: {
         username: u.username,
-        password: u.password,
+        password: hashedPassword,
       },
     });
     console.log(`  Created ${user.username} (${user.userId})`);
