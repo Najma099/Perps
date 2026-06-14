@@ -22,6 +22,11 @@
     "start:backend": "bun --cwd backend src/index.js",
     "start:engine": "bun --cwd engine dist/index.js",
     "start:ws": "bun --cwd ws-service dist/index.js",
-    "start:poller": "bun --cwd db-poller dist/index.js"
+    "start:poller": "bun --cwd db-poller dist/index.js",
+
+    "test:engine": "bun run --cwd engine test",
+    "test:backend": "bun run --cwd backend test",
+    "test:poller": "bun run --cwd db-poller test",
+    "test": "bun run test:engine && bun run test:backend && bun run test:poller"
   }
 }
