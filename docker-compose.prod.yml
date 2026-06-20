@@ -1,0 +1,69 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  db-poller:
+    image: ${DOCKER_USERNAME}/perp-background:latest
+    environment:
+      REDIS_URL: redis://redis:6379
+      EVENTS_QUEUE: stream:events
+      DATABASE_URL: "${DATABASE_URL}"
+    working_dir: /app/db-poller
+    command: ["bun", "run", "src/index.ts"]
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  engine:
+    image: ${DOCKER_USERNAME}/perp-engine:latest
+    environment:
+      REDIS_URL: redis://redis:6379
+      INCOMING_QUEUE: orders:in
+      DATABASE_URL: "${DATABASE_URL}"
+      JWT_SECRET: "${JWT_SECRET}"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  market-feed:
+    image: ${DOCKER_USERNAME}/perp-background:latest
+    environment:
+      REDIS_URL: redis://redis:6379
+    working_dir: /app/scripts
+    command: ["bun", "run", "market-feed.ts"]
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  ws-service:
+    image: ${DOCKER_USERNAME}/perp-ws-service:latest
+    ports:
+      - "8080:8080"
+    environment:
+      REDIS_URL: redis://redis:6379
+      WS_PORT: "8080"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  backend:
+    image: ${DOCKER_USERNAME}/perp-backend:latest
+    ports:
+      - "3000:3000"
+    environment:
+      REDIS_URL: redis://redis:6379
+      INCOMING_QUEUE: orders:in
+      JWT_SECRET: "${JWT_SECRET}"
+      PORT: "3000"
+      DATABASE_URL: "${DATABASE_URL}"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  redis-data:

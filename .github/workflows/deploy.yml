@@ -1,0 +1,94 @@
+name: Deploy to VM
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/perp-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/perp-backend:${{ env.IMAGE_TAG }}
+
+      - name: Build and push ws-service image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ws-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/perp-ws-service:latest
+            ${{ secrets.DOCKER_USERNAME }}/perp-ws-service:${{ env.IMAGE_TAG }}
+
+      - name: Build and push background image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.background
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/perp-background:latest
+            ${{ secrets.DOCKER_USERNAME }}/perp-background:${{ env.IMAGE_TAG }}
+
+      - name: Build and push engine image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: engine/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/perp-engine:latest
+            ${{ secrets.DOCKER_USERNAME }}/perp-engine:${{ env.IMAGE_TAG }}
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Copy docker-compose to VM
+        run: |
+          scp -o StrictHostKeyChecking=no \
+            docker-compose.prod.yml \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/app/docker-compose.yml
+
+      - name: Deploy on VM
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            set -e
+
+            cd /app
+
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+            docker compose down
+
+            docker compose pull
+
+            docker compose up -d
+
+            docker image prune -f
+
+            echo "Deployment complete"
+          EOF
