@@ -1,7 +1,8 @@
 import { Router, type Request } from "express";
 import { requireAuth } from "../utils/auth";
-import { sendToEngine, publisher } from "../utils/engine_client";
+import { sendToEngine } from "../utils/engine_client";
 import { asyncHandler } from "../utils/asyncHandler";
+import { prisma } from "@repo/db";
 
 import {
   onrampSchema,
@@ -195,61 +196,17 @@ router.get(
 router.get(
   "/candles/:market",
   asyncHandler(async (req, res) => {
-    const market = req.params.market;
-    const intervalMs = 60000;
-    const bucketSecs = intervalMs / 1000;
+    const market = req.params.market as string;
 
-    try {
-      const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${market}&interval=1m&limit=500`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const raw = (await response.json()) as number[][];
-        const candles = raw.map((k) => ({
-          time: Math.floor(k[0] / 1000),
-          open: parseFloat(String(k[1])),
-          high: parseFloat(String(k[2])),
-          low: parseFloat(String(k[3])),
-          close: parseFloat(String(k[4])),
-        }));
-        res.json({ candles });
-        return;
-      }
-    } catch {
-      // fall through to Redis-backed candles
-    }
+    const rows = await prisma.candle.findMany({
+      where: { market },
+      orderBy: { bucket: "desc" },
+      take: 500,
+    });
 
-    const raw = await publisher.xRevRange("stream:events", "+", "-", { COUNT: 10000 });
-    if (!raw) {
-      res.json({ candles: [] });
-      return;
-    }
-
-    const bucketMap = new Map<number, { open: number; high: number; low: number; close: number }>();
-
-    for (const entry of raw) {
-      if (entry.message.type !== "FILL_CREATED") continue;
-      let payload: any;
-      try { payload = JSON.parse(entry.message.payload); } catch { continue; }
-      if (payload.market !== market) continue;
-      if (payload.source !== "market" && payload.maker !== "binance") continue;
-
-      const createdAt = payload.createdAt ?? Date.now();
-      const bucket = Math.floor(createdAt / intervalMs) * bucketSecs;
-
-      const existing = bucketMap.get(bucket);
-      const price = payload.price;
-      if (existing) {
-        existing.high = Math.max(existing.high, price);
-        existing.low = Math.min(existing.low, price);
-        existing.close = price;
-      } else {
-        bucketMap.set(bucket, { open: price, high: price, low: price, close: price });
-      }
-    }
-
-    const candles = Array.from(bucketMap.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([time, c]) => ({ time, ...c }));
+    const candles = rows
+      .reverse()
+      .map((c) => ({ time: c.bucket, open: c.open, high: c.high, low: c.low, close: c.close }));
 
     res.json({ candles });
   }),

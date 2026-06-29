@@ -56,7 +56,8 @@ export const ModelName = {
   Fill: 'Fill',
   Position: 'Position',
   Balance: 'Balance',
-  Market: 'Market'
+  Market: 'Market',
+  Candle: 'Candle'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -153,6 +154,18 @@ export const MarketScalarFieldEnum = {
 } as const
 
 export type MarketScalarFieldEnum = (typeof MarketScalarFieldEnum)[keyof typeof MarketScalarFieldEnum]
+
+
+export const CandleScalarFieldEnum = {
+  market: 'market',
+  bucket: 'bucket',
+  open: 'open',
+  high: 'high',
+  low: 'low',
+  close: 'close'
+} as const
+
+export type CandleScalarFieldEnum = (typeof CandleScalarFieldEnum)[keyof typeof CandleScalarFieldEnum]
 
 
 export const SortOrder = {

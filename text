@@ -1,0 +1,180 @@
+Question 1
+Which scikit-learn class converts categorical text labels into numerical labels?
+
+
+
+StandardScaler 
+
+MinMaxScaler 
+
+LabelEncoder 
+
+PCA 
+
+1 point
+2.
+Question 2
+A MACCS key fingerprint represents a molecule using how many structural features?
+
+
+
+100 
+
+128 
+
+166 
+
+200 
+
+1 point
+3.
+Question 3
+What is the first step in the Feature Engineering Pipeline?
+
+
+
+Feature Scaling 
+
+Feature Selection 
+
+Feature Creation 
+
+Feature Extraction 
+
+1 point
+4.
+Question 4
+Which RDKit function converts a SMILES string into a molecule object?
+
+
+
+Chem.MolFromSmiles() 
+
+Chem.GetMol() 
+
+Chem.ReadSmiles() 
+
+Chem.ParseMol() Feedback: Incorrect. This is not a valid RDKit function. 
+
+1 point
+5.
+Question 5
+Which of the following algorithms is commonly used to extract and aggregate spatial features by iteratively passing messages between neighboring nodes (atoms) and edges (bonds) in a molecular graph?
+
+
+
+t-SNE 
+
+Graph Neural Networks 
+
+One-Hot Encoding 
+
+Recursive Feature Elimination 
+
+1 point
+6.
+Question 6
+Which formula correctly represents Standardization (Z-score scaling)?
+
+
+
+
+(x - min) / (max - min)
+
+(x - μ) / σ
+
+(x - Q1) / (Q3 - Q1)
+
+x / max
+
+1 point
+7.
+Question 7
+In pandas, what does the methoddf.iterrows() do?
+
+
+
+Iterates through columns 
+
+Iterates through the DataFrame row by row 
+
+Sorts rows by index 
+
+Deletes duplicate rows 
+
+1 point
+8.
+Question 8
+Which scaler is most resistant to outliers because it uses the interquartile range?
+
+
+
+StandardScaler 
+
+MinMaxScaler 
+
+RobustScaler 
+
+LabelEncoder 
+
+1 point
+9.
+Question 9
+What is the main purpose of applying PCA in feature engineering of molecular data?
+
+
+
+Encoding categorical labels 
+
+Dimensionality reduction 
+
+Filling missing values 
+
+Converting SMILES to text 
+
+1 point
+10.
+Question 10
+After applying MinMaxScaler withfeature_range=(0,1), what are the resulting minimum and maximum values of the scaled feature?
+
+
+
+-1 and 1 
+
+0 and 1 
+
+Mean 0, std dev 1 
+
+Depends on the dataset Feedback: Incorrect. The bounds are explicitly set to exactly 0 and 1 regardless of the underlying dataset's raw values. 
+
+1 point
+11.
+Question 11
+Before applying PCA on the MACCS-key bit matrix, why isStandardScaler applied first?
+
+
+
+To convert bit values back into SMILES strings 
+
+To place all bit dimensions on a comparable scale 
+
+To increase the number of MACCS bits to 200 so it captures variance fairly
+
+Because PCA only accepts string-type input 
+
+1 point
+12.
+Question 12
+In the customclassify() function (checking for 'Acid', 'ine'/'amine', and 'ol' substrings), which compound is most likely to be returned as None due to the function's logic?
+
+
+
+Aspirin (matches none of the defined substrings) 
+
+Ethanol (matches 'ol' for defined substrings) 
+
+Caffeine (matches 'ine' for defined substrings) 
+
+Citric Acid (matches 'Acid' for defined substrings) 
+
+1 point

@@ -103,3 +103,15 @@ model Market {
   symbol String @unique
   slug   String @unique
 }
+
+model Candle {
+  market String
+  bucket Int      // unix seconds, minute-aligned
+  open   Float
+  high   Float
+  low    Float
+  close  Float
+
+  @@unique([market, bucket])
+  @@index([market, bucket])
+}
