@@ -389,7 +389,8 @@ export const ModelName = {
   Fill: 'Fill',
   Position: 'Position',
   Balance: 'Balance',
-  Market: 'Market'
+  Market: 'Market',
+  Candle: 'Candle'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -405,7 +406,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "order" | "fill" | "position" | "balance" | "market"
+    modelProps: "user" | "order" | "fill" | "position" | "balance" | "market" | "candle"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -853,6 +854,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Candle: {
+      payload: Prisma.$CandlePayload<ExtArgs>
+      fields: Prisma.CandleFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CandleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CandleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload>
+        }
+        findFirst: {
+          args: Prisma.CandleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CandleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload>
+        }
+        findMany: {
+          args: Prisma.CandleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload>[]
+        }
+        create: {
+          args: Prisma.CandleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload>
+        }
+        createMany: {
+          args: Prisma.CandleCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CandleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload>[]
+        }
+        delete: {
+          args: Prisma.CandleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload>
+        }
+        update: {
+          args: Prisma.CandleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload>
+        }
+        deleteMany: {
+          args: Prisma.CandleDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CandleUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CandleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload>[]
+        }
+        upsert: {
+          args: Prisma.CandleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CandlePayload>
+        }
+        aggregate: {
+          args: Prisma.CandleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCandle>
+        }
+        groupBy: {
+          args: Prisma.CandleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CandleGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CandleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CandleCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -970,6 +1045,18 @@ export const MarketScalarFieldEnum = {
 } as const
 
 export type MarketScalarFieldEnum = (typeof MarketScalarFieldEnum)[keyof typeof MarketScalarFieldEnum]
+
+
+export const CandleScalarFieldEnum = {
+  market: 'market',
+  bucket: 'bucket',
+  open: 'open',
+  high: 'high',
+  low: 'low',
+  close: 'close'
+} as const
+
+export type CandleScalarFieldEnum = (typeof CandleScalarFieldEnum)[keyof typeof CandleScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1229,6 +1316,7 @@ export type GlobalOmitConfig = {
   position?: Prisma.PositionOmit
   balance?: Prisma.BalanceOmit
   market?: Prisma.MarketOmit
+  candle?: Prisma.CandleOmit
 }
 
 /* Types for Logging */

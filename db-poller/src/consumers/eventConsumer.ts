@@ -1,5 +1,6 @@
 import type { RedisClientType } from "redis";
 import type { RedisStreamMessage } from "../types/redisMessage.js";
+import { prisma } from "@repo/db";
 import { createOrder, updateOrderStatus } from "../repositories/order.repo.js";
 import { createFill } from "../repositories/fill.repo.js";
 import { upsertBalance } from "../repositories/balance.repo.js";
@@ -94,6 +95,18 @@ export async function processEvent(
           console.error("FILL_CREATED invalid", parsed.error.message);
           break;
         }
+        const bucket = Math.floor(parsed.data.createdAt / 60000) * 60;
+        const price = parsed.data.price;
+        await prisma.$executeRaw`
+          INSERT INTO "Candle" (market, bucket, open, high, low, close)
+          VALUES (${parsed.data.market}, ${bucket}, ${price}, ${price}, ${price}, ${price})
+          ON CONFLICT (market, bucket)
+          DO UPDATE SET
+            high = GREATEST("Candle".high, ${price}),
+            low = LEAST("Candle".low, ${price}),
+            close = ${price}
+        `;
+
         const orderId =
           parsed.data.side === "buy" ? parsed.data.long : parsed.data.short;
         if (!orderId) break;
@@ -107,6 +120,7 @@ export async function processEvent(
           maker: parsed.data.maker,
           taker: parsed.data.taker,
         });
+
         console.log("FILL_CREATED persisted", parsed.data.fillId);
         break;
       }

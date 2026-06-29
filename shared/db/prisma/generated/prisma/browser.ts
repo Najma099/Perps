@@ -47,3 +47,8 @@ export type Balance = Prisma.BalanceModel
  * 
  */
 export type Market = Prisma.MarketModel
+/**
+ * Model Candle
+ * 
+ */
+export type Candle = Prisma.CandleModel
